@@ -4,6 +4,22 @@ import dotenv from 'dotenv';
  
 // Importar rutas 
 import healthRouter from './routes/health'; 
+import { userRoutes } from './routes/users'; // ← Importar rutas de usuarios
+import supplierRoutes from "./routes/suppliers";
+import categoryRoutes from "./routes/categories";
+import productRoutes from "./routes/products";
+import shareholderProductRoutes from "./routes/shareholder-products";
+import shareholderRoutes from "./routes/shareholders";
+import customerRoutes from "./routes/customers";
+import purchaseRoutes from "./routes/purchases";
+import saleRoutes from "./routes/sales";
+import dividendRoutes from "./routes/dividends";
+import warehouseRoutes from "./routes/warehouses";
+import stockRoutes from "./routes/stocks";
+import stockMovementRoutes from "./routes/stock-movements";
+import purchaseItemRoutes from "./routes/purchase-items";
+import saleItemRoutes from "./routes/sale-items";
+import productAnalyticsRoutes from "./routes/product-analytics";
  
 // Cargar variables de entorno (SIEMPRE primero) 
 dotenv.config(); 
@@ -32,7 +48,22 @@ app.use(express.urlencoded({ extended: true }));
  
 // Ruta de health check 
 app.use('/health', healthRouter); 
- 
+app.use("/api/users", userRoutes);
+app.use("/api/suppliers", supplierRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/shareholder-products", shareholderProductRoutes);
+app.use("/api/shareholders", shareholderRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/purchases", purchaseRoutes);
+app.use("/api/sales", saleRoutes);
+app.use("/api/dividends", dividendRoutes);
+app.use("/api/warehouses", warehouseRoutes);
+app.use("/api/stocks", stockRoutes);
+app.use("/api/stock-movements", stockMovementRoutes);
+app.use("/api/purchase-items", purchaseItemRoutes);
+app.use("/api/sale-items", saleItemRoutes);
+app.use("/api/product-analytics", productAnalyticsRoutes);
 // Ruta raíz informativa 
 app.get('/', (req: Request, res: Response) => { 
   res.json({ 

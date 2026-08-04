@@ -1,0 +1,26 @@
+info:
+  name: Crear Proveedor
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:3000/api/suppliers
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Importadora cyc",
+        "contactName": "Maria Gomez",
+        "email": "ventas1@losandes.com",
+        "phone": "+59171111111",
+        "address": "Calle Sucre #456",
+        "taxId": "98765432018"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

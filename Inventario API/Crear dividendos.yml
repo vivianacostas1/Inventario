@@ -1,0 +1,24 @@
+info:
+  name: Crear dividendos
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/dividends
+  body:
+    type: json
+    data: |-
+      {
+        "shareholderId": "339c91d9-2ec6-4776-9382-9cdae8fea5af",
+        "productId": "a6f8062c-a396-43ec-a9e6-5def01f0a60e",
+        "amount": 1500.50,
+        "period": "2026-Q1",
+        "notes": "Pago correspondiente al primer trimestre de ventas del producto."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

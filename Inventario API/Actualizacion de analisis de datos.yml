@@ -1,0 +1,24 @@
+info:
+  name: Actualizacion de analisis de datos
+  type: http
+
+http:
+  method: PUT
+  url: http://localhost:3000/api/product-analytics/product/a6f8062c-a396-43ec-a9e6-5def01f0a60e
+  body:
+    type: json
+    data: |-
+      {
+        "currentStock": 50,
+        "avgMonthlySales": 12.5,
+        "reorderPoint": 10,
+        "suggestedReorderQty": 30,
+        "needsReorder": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
