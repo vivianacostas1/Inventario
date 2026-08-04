@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { ProductController } from "../controllers/products.controller";
+import { verifyToken } from "../middlewares/auth.middleware";
 
 const router = Router();
+
+// Esto protege TODAS las rutas que estén por debajo de esta línea
+router.use(verifyToken);
 
 router.get("/", ProductController.getProducts);
 router.get("/:id", ProductController.getProductById);

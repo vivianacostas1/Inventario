@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
  
 // Importar rutas 
 import healthRouter from './routes/health'; 
-import { userRoutes } from './routes/users'; // ← Importar rutas de usuarios
+import { userRoutes } from './routes/users'; 
 import supplierRoutes from "./routes/suppliers";
 import categoryRoutes from "./routes/categories";
 import productRoutes from "./routes/products";
@@ -20,6 +20,7 @@ import stockMovementRoutes from "./routes/stock-movements";
 import purchaseItemRoutes from "./routes/purchase-items";
 import saleItemRoutes from "./routes/sale-items";
 import productAnalyticsRoutes from "./routes/product-analytics";
+import authRoutes from "./routes/auth.routes";
  
 // Cargar variables de entorno (SIEMPRE primero) 
 dotenv.config(); 
@@ -30,23 +31,14 @@ const PORT: number = parseInt(process.env.PORT || "3000", 10);
  
 // ──────────────────────────────────────────────────── 
 // MIDDLEWARES GLOBALES 
-// Los middlewares se ejecutan en ORDEN para cada request 
 // ──────────────────────────────────────────────────── 
- 
-// Permitir requests desde otros dominios (necesario para el frontend) 
 app.use(cors()); 
- 
-// Parsear JSON del body de los requests 
 app.use(express.json()); 
- 
-// Parsear form data del body 
 app.use(express.urlencoded({ extended: true })); 
  
 // ──────────────────────────────────────────────────── 
 // RUTAS 
 // ──────────────────────────────────────────────────── 
- 
-// Ruta de health check 
 app.use('/health', healthRouter); 
 app.use("/api/users", userRoutes);
 app.use("/api/suppliers", supplierRoutes);
@@ -64,6 +56,8 @@ app.use("/api/stock-movements", stockMovementRoutes);
 app.use("/api/purchase-items", purchaseItemRoutes);
 app.use("/api/sale-items", saleItemRoutes);
 app.use("/api/product-analytics", productAnalyticsRoutes);
+app.use("/api/auth", authRoutes);
+
 // Ruta raíz informativa 
 app.get('/', (req: Request, res: Response) => { 
   res.json({ 
@@ -82,7 +76,7 @@ app.get('/', (req: Request, res: Response) => {
 // ──────────────────────────────────────────────────── 
 app.use((req: Request, res: Response) => { 
   res.status(404).json({ 
- error: 'Ruta no encontrada', 
+    error: 'Ruta no encontrada', 
     path: req.path, 
     method: req.method, 
   }); 
@@ -98,4 +92,4 @@ app.listen(PORT, () => {
   console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}\n`); 
 }); 
  
-export default app; 
+export default app;

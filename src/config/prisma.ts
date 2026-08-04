@@ -1,3 +1,4 @@
+import "dotenv/config"; // <--- ESTO ES LO QUE FALTA (carga el .env inmediatamente)
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 

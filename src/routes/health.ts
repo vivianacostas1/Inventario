@@ -1,7 +1,11 @@
 import { Router, Request, Response } from 'express'; 
 import pool from '../config/database'; 
+import { verifyToken } from "../middlewares/auth.middleware";
  
-const router = Router(); 
+const router = Router();
+
+// Esto protege TODAS las rutas que estén por debajo de esta línea
+router.use(verifyToken); 
 /** 
  * GET /health 
  * Verifica el estado del servidor y la conexión a la base de datos. 
