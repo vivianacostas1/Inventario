@@ -1,0 +1,23 @@
+info:
+  name: Crear Item Compra
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/purchase-items
+  body:
+    type: json
+    data: |-
+      {
+        "purchaseId": "ad461c98-bcd1-492a-985e-490390615f39",
+        "productId": "a6f8062c-a396-43ec-a9e6-5def01f0a60e",
+        "quantity": 5,
+        "unitCost": 50.00
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

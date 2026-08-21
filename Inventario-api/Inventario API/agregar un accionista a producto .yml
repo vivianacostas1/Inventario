@@ -1,0 +1,23 @@
+info:
+  name: "agregar un accionista a producto "
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/shareholder-products/products/a6f8062c-a396-43ec-a9e6-5def01f0a60e/assign-shareholder
+  body:
+    type: json
+    data: |-
+      {
+        "shareholderId": "bf7cdd41-fc02-45b6-be29-4ca83143b358",
+        "quantity": 25
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0MjhiODRjNi1mNjVjLTQ2NGYtOTFiYi1hNWE3NmFkMTJjOWEiLCJlbWFpbCI6ImFkbWluQGludmVudGFyaW8uY29tIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzg2MzY4NzIwLCJleHAiOjE3ODY0NTUxMjB9.YtMfd7-LYLA8x2gmJY3K35-QW-NgWN8W_e7Ni9XgzOY
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,14 @@
+info:
+  name: Listar Stcok
+  type: http
+
+http:
+  method: GET
+  url: http://localhost:3000/api/stocks
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

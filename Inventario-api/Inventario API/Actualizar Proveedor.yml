@@ -1,0 +1,21 @@
+info:
+  name: Actualizar Proveedor
+  type: http
+
+http:
+  method: PUT
+  url: http://localhost:3000/api/suppliers/610e37ae-9afd-441b-a2d0-1d822b37d2b2
+  body:
+    type: json
+    data: |-
+      {
+        "phone": "+59172222222",
+        "address": "Zona Comercial Local 12"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

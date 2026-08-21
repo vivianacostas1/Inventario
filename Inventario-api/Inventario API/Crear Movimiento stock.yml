@@ -1,0 +1,25 @@
+info:
+  name: Crear Movimiento stock
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/stock-movements
+  body:
+    type: json
+    data: |-
+      {
+        "warehouseId": "235e996d-ad2d-4ccd-a328-cddba1087264",
+        "productId": "a6f8062c-a396-43ec-a9e6-5def01f0a60e",
+        "userId": "078b642d-5e10-444f-a125-19d41d163260",
+        "type": "IN",
+        "quantity": 10,
+        "referenceId": "TEST-001"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

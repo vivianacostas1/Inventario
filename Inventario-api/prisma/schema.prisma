@@ -1,0 +1,374 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// ============================
+/// ENUMS
+/// ============================
+
+enum Role {
+  ADMIN
+  MANAGER
+  SALES
+  WAREHOUSE
+
+  @@map("rol")
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  TRANSFER
+
+  @@map("tipo_movimiento")
+}
+
+enum PurchaseStatus {
+  PENDING
+  RECEIVED
+  CANCELLED
+
+  @@map("estado_compra")
+}
+
+enum SaleStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+
+  @@map("estado_venta")
+}
+
+/// ============================
+/// MODULO: USUARIOS
+/// ============================
+
+model User {
+  id           String   @id @default(uuid())
+  name         String   @map("nombre")
+  email        String   @unique @map("correo")
+  passwordHash String   @map("password_hash")
+  role         Role     @default(SALES) @map("rol")
+  isActive     Boolean  @default(true) @map("esta_activo")
+  createdAt    DateTime @default(now()) @map("creado_en")
+  updatedAt    DateTime @updatedAt @map("actualizado_en")
+
+  stockMovements StockMovement[]
+  purchases      Purchase[]
+  sales          Sale[]
+
+  @@index([email])
+  @@index([role])
+  @@map("usuarios")
+}
+
+/// ============================
+/// MODULO: PROVEEDORES
+/// ============================
+
+model Supplier {
+  id          String   @id @default(uuid())
+  name        String   @map("nombre")
+  contactName String?  @map("nombre_contacto")
+  email       String?  @map("correo")
+  phone       String?  @map("telefono")
+  address     String?  @map("direccion")
+  taxId       String?  @map("nit")
+  isActive    Boolean  @default(true) @map("esta_activo")
+  createdAt   DateTime @default(now()) @map("creado_en")
+  updatedAt   DateTime @updatedAt @map("actualizado_en")
+
+  products  Product[]
+  purchases Purchase[]
+
+  @@index([name])
+  @@index([taxId])
+  @@map("proveedores")
+}
+
+/// ============================
+/// MODULO: ACCIONISTAS
+/// ============================
+
+model Shareholder {
+  id               String   @id @default(uuid())
+  name             String   @map("nombre")
+  email            String?  @unique @map("correo")
+  phone            String?  @map("telefono")
+  sharePercentage  Decimal  @map("porcentaje_participacion") @db.Decimal(5, 2)
+  investmentAmount Decimal  @map("monto_inversion") @db.Decimal(14, 2)
+  joinedAt         DateTime @default(now()) @map("fecha_ingreso")
+  isActive         Boolean  @default(true) @map("esta_activo")
+  createdAt        DateTime @default(now()) @map("creado_en")
+
+  shareholderProducts ShareholderProduct[]
+  purchases           Purchase[]
+  saleItems           SaleItem[]
+
+  @@index([email])
+  @@map("accionistas")
+}
+
+/// Inversion de un accionista en un producto especifico.
+/// Un dividendo SOLO puede existir a traves de esta relacion,
+/// garantizando que provenga de un producto en el que el accionista invirtio.
+model ShareholderProduct {
+  id            String   @id @default(uuid())
+  shareholderId String   @map("accionista_id")
+  productId     String   @map("producto_id")
+  quantity      Int      @default(0) @map("cantidad")
+  assignedAt    DateTime @default(now()) @map("asignado_en")
+
+  shareholder Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  dividends   Dividend[]
+
+  @@unique([shareholderId, productId])
+  @@index([shareholderId])
+  @@index([productId])
+  @@map("accionistas_productos")
+}
+
+model Dividend {
+  id                   String   @id @default(uuid())
+  shareholderProductId String   @map("accionista_producto_id")
+  amount               Decimal  @map("monto") @db.Decimal(14, 2)
+  period               String   @map("periodo")
+  paidAt               DateTime @default(now()) @map("fecha_pago")
+  notes                String?  @map("notas")
+  createdAt            DateTime @default(now()) @map("creado_en")
+
+  shareholderProduct ShareholderProduct @relation(fields: [shareholderProductId], references: [id], onDelete: Cascade)
+
+  @@index([shareholderProductId])
+  @@map("dividendos")
+}
+
+/// ============================
+/// MODULO: INVENTARIO / PRODUCTOS
+/// ============================
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique @map("nombre")
+  description String?  @map("descripcion")
+  createdAt   DateTime @default(now()) @map("creado_en")
+
+  products Product[]
+
+  @@index([name])
+  @@map("categorias")
+}
+
+model Warehouse {
+  id        String   @id @default(uuid())
+  name      String   @map("nombre")
+  location  String?  @map("ubicacion")
+  createdAt DateTime @default(now()) @map("creado_en")
+
+  stocks         Stock[]
+  stockMovements StockMovement[]
+
+  @@index([name])
+  @@map("almacenes")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  sku         String   @unique @map("sku")
+  name        String   @map("nombre")
+  description String?  @map("descripcion")
+  unitPrice   Decimal  @map("precio_unitario") @db.Decimal(12, 2)
+  costPrice   Decimal  @map("precio_costo") @db.Decimal(12, 2)
+  categoryId  String   @map("categoria_id")
+  supplierId  String   @map("proveedor_id")
+  minStock    Int      @default(0) @map("stock_minimo")
+  maxStock    Int?     @map("stock_maximo")
+  isActive    Boolean  @default(true) @map("esta_activo")
+  createdAt   DateTime @default(now()) @map("creado_en")
+  updatedAt   DateTime @updatedAt @map("actualizado_en")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  stocks              Stock[]
+  stockMovements      StockMovement[]
+  purchaseItems       PurchaseItem[]
+  saleItems           SaleItem[]
+  analytics           ProductAnalytics?
+  shareholderProducts ShareholderProduct[]
+
+  @@index([sku])
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([name])
+  @@map("productos")
+}
+
+/// Stock actual por almacen (control de stock)
+model Stock {
+  id          String   @id @default(uuid())
+  productId   String   @map("producto_id")
+  warehouseId String   @map("almacen_id")
+  quantity    Int      @default(0) @map("cantidad")
+  updatedAt   DateTime @updatedAt @map("actualizado_en")
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, warehouseId])
+  @@index([productId])
+  @@index([warehouseId])
+  @@map("stocks")
+}
+
+/// Historial de movimientos de inventario (entradas, salidas, ajustes, transferencias)
+model StockMovement {
+  id          String       @id @default(uuid())
+  productId   String       @map("producto_id")
+  warehouseId String       @map("almacen_id")
+  userId      String       @map("usuario_id")
+  type        MovementType @map("tipo")
+  quantity    Int          @map("cantidad")
+  reason      String?      @map("motivo")
+  referenceId String?      @map("referencia_id")
+  createdAt   DateTime     @default(now()) @map("creado_en")
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([warehouseId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("movimientos_stock")
+}
+
+/// ============================
+/// MODULO: COMPRAS (reabastecimiento a proveedores)
+/// ============================
+
+model Purchase {
+  id            String         @id @default(uuid())
+  supplierId    String         @map("proveedor_id")
+  userId        String         @map("usuario_id")
+  shareholderId String?        @map("accionista_id")
+  status        PurchaseStatus @default(PENDING) @map("estado")
+  totalAmount   Decimal        @default(0) @map("monto_total") @db.Decimal(14, 2)
+  createdAt     DateTime       @default(now()) @map("creado_en")
+  receivedAt    DateTime?      @map("fecha_recepcion")
+
+  supplier    Supplier     @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  shareholder Shareholder? @relation(fields: [shareholderId], references: [id], onDelete: SetNull)
+  items       PurchaseItem[]
+
+  @@index([supplierId])
+  @@index([shareholderId])
+  @@index([status])
+  @@map("compras")
+}
+
+model PurchaseItem {
+  id         String  @id @default(uuid())
+  purchaseId String  @map("compra_id")
+  productId  String  @map("producto_id")
+  quantity   Int     @map("cantidad")
+  unitCost   Decimal @map("costo_unitario") @db.Decimal(12, 2)
+  subtotal   Decimal @map("subtotal") @db.Decimal(14, 2)
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([purchaseId])
+  @@index([productId])
+  @@map("items_compra")
+}
+
+/// ============================
+/// MODULO: VENTAS
+/// ============================
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String   @map("nombre")
+  email     String?  @unique @map("correo")
+  phone     String?  @map("telefono")
+  address   String?  @map("direccion")
+  createdAt DateTime @default(now()) @map("creado_en")
+
+  sales Sale[]
+
+  @@index([email])
+  @@map("clientes")
+}
+
+model Sale {
+  id          String     @id @default(uuid())
+  customerId  String?    @map("cliente_id")
+  userId      String     @map("usuario_id")
+  status      SaleStatus @default(PENDING) @map("estado")
+  totalAmount Decimal    @default(0) @map("monto_total") @db.Decimal(14, 2)
+  createdAt   DateTime   @default(now()) @map("creado_en")
+
+  customer Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items    SaleItem[]
+
+  @@index([customerId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ventas")
+}
+
+model SaleItem {
+  id            String  @id @default(uuid())
+  saleId        String  @map("venta_id")
+  productId     String  @map("producto_id")
+  shareholderId String? @map("accionista_id") // <-- Campo añadido
+  quantity      Int     @map("cantidad")
+  unitPrice     Decimal @map("precio_unitario") @db.Decimal(12, 2)
+  subtotal      Decimal @map("subtotal") @db.Decimal(14, 2)
+
+  sale        Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  shareholder Shareholder? @relation(fields: [shareholderId], references: [id], onDelete: SetNull) // <-- Relación añadida
+
+  @@index([saleId])
+  @@index([productId])
+  @@index([shareholderId])
+  @@map("items_venta")
+}
+
+/// ============================
+/// MODULO: ANALISIS DE DATOS
+/// ============================
+
+model ProductAnalytics {
+  id                  String    @id @default(uuid())
+  productId           String    @unique @map("producto_id")
+  currentStock        Int       @default(0) @map("stock_actual")
+  avgMonthlySales     Decimal   @default(0) @map("promedio_ventas_mensuales") @db.Decimal(12, 2)
+  daysWithoutMovement Int       @default(0) @map("dias_sin_movimiento")
+  lastSaleAt          DateTime? @map("fecha_ultima_venta")
+  lastPurchaseAt      DateTime? @map("fecha_ultima_compra")
+  reorderPoint        Int       @default(0) @map("punto_reorden")
+  suggestedReorderQty Int       @default(0) @map("cantidad_reorden_sugerida")
+  isSlowMoving        Boolean   @default(false) @map("movimiento_lento")
+  needsReorder        Boolean   @default(false) @map("necesita_reposicion")
+  computedAt          DateTime  @default(now()) @map("calculado_en")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([needsReorder])
+  @@index([isSlowMoving])
+  @@map("analisis_productos")
+}

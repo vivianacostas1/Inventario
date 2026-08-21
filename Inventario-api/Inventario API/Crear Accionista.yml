@@ -1,0 +1,24 @@
+info:
+  name: Crear Accionista
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/shareholders
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Carlos Mendoza",
+        "email": "carlos.mendoza@test.com",
+        "phone": "+59175555555",
+        "sharePercentage": 15.00,
+        "investmentAmount": 25000.00
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,23 @@
+info:
+  name: Crear Cliente
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/customers
+  body:
+    type: json
+    data: |-
+      {
+        "name": "María Gómez",
+        "email": "maria.gomez@test.com",
+        "phone": "+59176666666",
+        "address": "Av. Principal #123"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
