@@ -1,0 +1,23 @@
+info:
+  name: Crear Item Venta
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/sale-items
+  body:
+    type: json
+    data: |-
+      {
+        "saleId": "13d0a43a-fc63-4080-9e57-ffaefb02a80b",
+        "productId": "a6f8062c-a396-43ec-a9e6-5def01f0a60e",
+        "quantity": 2,
+        "unitPrice": 150.00
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

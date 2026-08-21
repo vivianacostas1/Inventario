@@ -1,0 +1,28 @@
+info:
+  name: Crear Ventas
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/sales
+  body:
+    type: json
+    data: |-
+      {
+        "customerId": "fd39bdc8-4151-4001-a368-0f4712f47ac7",
+        "userId": "078b642d-5e10-444f-a125-19d41d163260",
+        "items": [
+          {
+            "productId": "a6f8062c-a396-43ec-a9e6-5def01f0a60e",
+            "quantity": 2,
+            "unitPrice": 300.00
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

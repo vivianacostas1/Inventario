@@ -1,0 +1,21 @@
+info:
+  name: Crear Almacen
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/warehouses
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Almacén Central",
+        "location": "Zona Industrial Calle 4"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

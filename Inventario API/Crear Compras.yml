@@ -1,0 +1,28 @@
+info:
+  name: Crear Compras
+  type: http
+
+http:
+  method: POST
+  url: http://localhost:3000/api/purchases
+  body:
+    type: json
+    data: |-
+      {
+        "supplierId": "eb46e614-968e-456f-9187-d39a05b4b692",
+        "userId": "078b642d-5e10-444f-a125-19d41d163260",
+        "items": [
+          {
+            "productId": "a6f8062c-a396-43ec-a9e6-5def01f0a60e",
+            "quantity": 10,
+            "unitCost": 200.00
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

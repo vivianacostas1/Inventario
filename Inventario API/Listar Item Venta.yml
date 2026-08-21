@@ -1,0 +1,14 @@
+info:
+  name: Listar Item Venta
+  type: http
+
+http:
+  method: GET
+  url: http://localhost:3000/api/sale-items/sale/13d0a43a-fc63-4080-9e57-ffaefb02a80b
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

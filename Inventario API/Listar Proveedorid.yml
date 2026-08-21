@@ -1,0 +1,14 @@
+info:
+  name: Listar Proveedorid
+  type: http
+
+http:
+  method: GET
+  url: http://localhost:3000/api/suppliers/610e37ae-9afd-441b-a2d0-1d822b37d2b2
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

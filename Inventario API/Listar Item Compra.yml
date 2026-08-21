@@ -1,0 +1,14 @@
+info:
+  name: Listar Item Compra
+  type: http
+
+http:
+  method: GET
+  url: http://localhost:3000/api/purchase-items/purchase/ad461c98-bcd1-492a-985e-490390615f39
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
