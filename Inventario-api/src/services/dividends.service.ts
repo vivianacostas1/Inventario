@@ -7,7 +7,7 @@ export class DividendService {
       include: {
         shareholder: true,
         product: true,
-      },
+      } as any,
     });
   }
 
@@ -17,34 +17,28 @@ export class DividendService {
       include: {
         shareholder: true,
         product: true,
-      },
+      } as any,
     });
   }
 
   static async create(data: CreateDividendDTO) {
     return await prisma.dividend.create({
-      data: {
-        shareholderId: data.shareholderId,
-        productId: data.productId || null,
-        amount: data.amount,
-        period: data.period,
-        notes: data.notes || null,
-      },
+      data: data as any,
       include: {
         shareholder: true,
         product: true,
-      },
+      } as any,
     });
   }
 
   static async update(id: string, data: UpdateDividendDTO) {
     return await prisma.dividend.update({
       where: { id },
-      data,
+      data: data as any,
       include: {
         shareholder: true,
         product: true,
-      },
+      } as any,
     });
   }
 

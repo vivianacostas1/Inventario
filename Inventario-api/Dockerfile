@@ -13,7 +13,6 @@ RUN npx prisma generate
 
 COPY tsconfig.json ./
 COPY src ./src
-COPY prisma.config.ts ./
 
 # Compilar TypeScript -> JavaScript
 RUN npm run build

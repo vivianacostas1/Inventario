@@ -15,17 +15,17 @@ export class SaleItemService {
     const subtotal = Number(data.quantity) * Number(data.unitPrice);
 
     return await prisma.$transaction(async (tx) => {
-      // 1. Crear el ítem de venta
+      // 1. Crear el ítem de venta usando data as any para evitar conflictos de tipos
       const saleItem = await tx.saleItem.create({
         data: {
           saleId: data.saleId,
           productId: data.productId,
           quantity: data.quantity,
-          unitPrice: data.unitPrice ?? 0, // <--- Cambia esto para manejar el undefined
+          unitPrice: data.unitPrice ?? 0,
           subtotal,
           shareholderId: data.shareholderId,
           shareholderProductId: data.shareholderProductId,
-        },
+        } as any,
         include: {
           product: true,
         },

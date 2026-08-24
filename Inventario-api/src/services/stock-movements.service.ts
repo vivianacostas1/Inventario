@@ -29,7 +29,7 @@ export class StockMovementService {
 
   static async create(data: CreateStockMovementDTO) {
     return await prisma.$transaction(async (tx) => {
-      // 1. Crear el registro del movimiento
+      // 1. Crear el registro usando el DTO directamente casteado
       const movement = await tx.stockMovement.create({
         data: data as any,
         include: {
@@ -50,7 +50,8 @@ export class StockMovementService {
       });
 
       // Si es IN suma, de lo contrario resta (como OUT)
-      const qtyChange = data.type === MovementType.IN ? data.quantity : -data.quantity;
+      const qtyChange = (data.type as string) === "IN" ? data.quantity : -data.quantity;
+      
       const newQuantity = (currentStock ? currentStock.quantity : 0) + qtyChange;
 
       // 3. Actualizar o crear el registro de stock resultante
