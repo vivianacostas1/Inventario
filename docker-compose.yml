@@ -1,0 +1,53 @@
+services: 
+ 
+  # ── PostgreSQL ──────────────────────────────────────── 
+  db: 
+    image: postgres:16-alpine 
+    container_name: inventario_db 
+    restart: unless-stopped 
+    environment: 
+      POSTGRES_USER: postgres 
+      POSTGRES_PASSWORD: vivita123 
+      POSTGRES_DB: inventario_db 
+    ports: 
+      - '5432:5432' 
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data 
+    healthcheck: 
+      test: ['CMD-SHELL', 'pg_isready -U postgres'] 
+      interval: 5s 
+      retries: 5 
+ 
+  # ── Backend ─────────────────────────────────────────── 
+  backend: 
+    build: 
+      context: ./Inventario-api 
+    container_name: inventario_backend 
+    restart: unless-stopped 
+    ports: 
+      - '3000:3000' 
+    environment: 
+      DATABASE_URL: postgresql://postgres:vivita123@db:5432/inventario_db?schema=public 
+      JWT_SECRET: inventario_secret_dev 
+      JWT_EXPIRES_IN: 7d 
+      NODE_ENV: production 
+      PORT: 3000 
+    depends_on: 
+      db: 
+        condition: service_healthy 
+ 
+  # ── Frontend ────────────────────────────────────────── 
+  frontend: 
+    build: 
+      context: ./inventario-front 
+      args: 
+        VITE_API_URL: http://localhost:3000 
+    container_name: inventario_frontend 
+    restart: unless-stopped 
+    ports: 
+      - '5173:80' 
+    depends_on: 
+      - backend 
+ 
+volumes: 
+  postgres_data:

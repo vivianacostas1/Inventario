@@ -35,7 +35,7 @@ export class SaleItemService {
       });
 
       const totalAmount = allItems.reduce(
-        (acc, item) => acc + Number(item.subtotal),
+        (acc: number, item: any) => acc + Number(item.subtotal),
         0
       );
 
