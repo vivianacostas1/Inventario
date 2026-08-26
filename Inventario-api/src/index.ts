@@ -2,7 +2,10 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// Importar rutas
+// Cargar variables de entorno
+dotenv.config();
+
+// Importar rutas de Inventario
 import healthRouter from './routes/health';
 import { userRoutes } from './routes/users';
 import supplierRoutes from './routes/suppliers';
@@ -23,44 +26,67 @@ import saleItemRoutes from './routes/sale-items';
 import productAnalyticsRoutes from './routes/product-analytics';
 import authRoutes from './routes/auth.routes';
 
-// Cargar variables de entorno
-dotenv.config();
-
-// Crear aplicación Express
+// Crear aplicación
 const app: Application = express();
-
-// Render proporciona PORT mediante variable de entorno
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
 
 // ────────────────────────────────────────────────────
-// CORS ABIERTO
+// CORS (Estructura exacta adaptada de tu proyecto funcional)
 // ────────────────────────────────────────────────────
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Permitir peticiones sin Origin (Postman, Insomnia, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Permitir localhost y dominio definido en FRONTEND_URL
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Permitir todos los despliegues de Vercel del proyecto (puedes ajustar el prefijo si lo deseas, o dejar .vercel.app)
+      // Permitir todos los despliegues de Vercel del proyecto
+      // Permitir despliegues de Vercel que comiencen con inventario-
+      if (
+        origin.startsWith('https://inventario-') &&
+        origin.endsWith('.vercel.app')
+      ) {
+        return callback(null, true);
+      }
+      console.log('❌ CORS bloqueó el origen:', origin);
+      callback(new Error('Origen no permitido por CORS'));
+    },
+
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
-// ────────────────────────────────────────────────────
-// MIDDLEWARES
-// ────────────────────────────────────────────────────
+// Habilitar preflight global para evitar 404 en OPTIONS
+app.options('*', cors());
 
+// Parsear JSON
 app.use(express.json());
 
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
+// Parsear formularios
+app.use(express.urlencoded({ extended: true }));
 
 // ────────────────────────────────────────────────────
 // RUTAS
 // ────────────────────────────────────────────────────
 
 app.use('/health', healthRouter);
+
 app.use('/api/users', userRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -77,16 +103,10 @@ app.use('/api/stock-movements', stockMovementRoutes);
 app.use('/api/purchase-items', purchaseItemRoutes);
 app.use('/api/sale-items', saleItemRoutes);
 app.use('/api/product-analytics', productAnalyticsRoutes);
-
-// AUTENTICACIÓN
 app.use('/api/auth', authRoutes);
-
 app.use('/api/analytics', analyticsRoutes);
 
-// ────────────────────────────────────────────────────
-// RUTA RAÍZ
-// ────────────────────────────────────────────────────
-
+// Ruta principal
 app.get('/', (req: Request, res: Response) => {
   res.json({
     project: 'Inventario API',
@@ -102,7 +122,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // ────────────────────────────────────────────────────
-// MANEJO DE RUTAS NO ENCONTRADAS
+// 404
 // ────────────────────────────────────────────────────
 
 app.use((req: Request, res: Response) => {
@@ -114,41 +134,14 @@ app.use((req: Request, res: Response) => {
 });
 
 // ────────────────────────────────────────────────────
-// MANEJO DE ERRORES
-// ────────────────────────────────────────────────────
-
-app.use(
-  (
-    err: Error,
-    req: Request,
-    res: Response,
-    next: Function
-  ) => {
-    console.error('❌ Error del servidor:', err.message);
-
-    return res.status(500).json({
-      error: 'Error interno del servidor',
-      message:
-        process.env.NODE_ENV === 'development'
-          ? err.message
-          : 'Error interno',
-    });
-  }
-);
-
-// ────────────────────────────────────────────────────
 // INICIAR SERVIDOR
 // ────────────────────────────────────────────────────
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log('');
-  console.log('🚀 Inventario API iniciada');
+  console.log('\n🚀 Inventario API iniciada');
   console.log(`📡 Puerto: ${PORT}`);
-  console.log('🌐 CORS: Abierto a cualquier origen (*)');
-  console.log(
-    `🌍 Entorno: ${process.env.NODE_ENV || 'development'}`
-  );
-  console.log('');
+  console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`✅ Frontend permitido: ${process.env.FRONTEND_URL || 'Vercel Preview'}`);
 });
 
 export default app;
