@@ -33,62 +33,14 @@ const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
 
 // ────────────────────────────────────────────────────
-// CORS
+// CORS ABIERTO
 // ────────────────────────────────────────────────────
-
-// Orígenes fijos permitidos (localhost, etc.)
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-];
-
-// Si configuramos FRONTEND_URL en Render,
-// también lo agregamos automáticamente.
-if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
-}
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Permitir peticiones sin Origin
-      // (Postman, curl, health checks, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // Permitir si está en la lista fija
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      // Permitir automáticamente CUALQUIER despliegue de Vercel (*.vercel.app)
-      if (origin.endsWith('.vercel.app')) {
-        return callback(null, true);
-      }
-
-      console.log(`🚫 CORS bloqueado para: ${origin}`);
-
-      return callback(
-        new Error(`Origen no permitido por CORS: ${origin}`)
-      );
-    },
-
+    origin: true,
     credentials: true,
-
-    methods: [
-      'GET',
-      'POST',
-      'PUT',
-      'DELETE',
-      'PATCH',
-      'OPTIONS',
-    ],
-
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
@@ -109,64 +61,27 @@ app.use(
 // ────────────────────────────────────────────────────
 
 app.use('/health', healthRouter);
-
 app.use('/api/users', userRoutes);
-
 app.use('/api/suppliers', supplierRoutes);
-
 app.use('/api/categories', categoryRoutes);
-
 app.use('/api/products', productRoutes);
-
-app.use(
-  '/api/shareholder-products',
-  shareholderProductRoutes
-);
-
-app.use(
-  '/api/shareholders',
-  shareholderRoutes
-);
-
+app.use('/api/shareholder-products', shareholderProductRoutes);
+app.use('/api/shareholders', shareholderRoutes);
 app.use('/api/customers', customerRoutes);
-
 app.use('/api/purchases', purchaseRoutes);
-
 app.use('/api/sales', saleRoutes);
-
 app.use('/api/dividends', dividendRoutes);
-
 app.use('/api/warehouses', warehouseRoutes);
-
 app.use('/api/stocks', stockRoutes);
-
-app.use(
-  '/api/stock-movements',
-  stockMovementRoutes
-);
-
-app.use(
-  '/api/purchase-items',
-  purchaseItemRoutes
-);
-
-app.use(
-  '/api/sale-items',
-  saleItemRoutes
-);
-
-app.use(
-  '/api/product-analytics',
-  productAnalyticsRoutes
-);
+app.use('/api/stock-movements', stockMovementRoutes);
+app.use('/api/purchase-items', purchaseItemRoutes);
+app.use('/api/sale-items', saleItemRoutes);
+app.use('/api/product-analytics', productAnalyticsRoutes);
 
 // AUTENTICACIÓN
 app.use('/api/auth', authRoutes);
 
-app.use(
-  '/api/analytics',
-  analyticsRoutes
-);
+app.use('/api/analytics', analyticsRoutes);
 
 // ────────────────────────────────────────────────────
 // RUTA RAÍZ
@@ -177,8 +92,7 @@ app.get('/', (req: Request, res: Response) => {
     project: 'Inventario API',
     version: '1.0.0',
     status: 'online',
-    description:
-      'Servidor Express con TypeScript + PostgreSQL',
+    description: 'Servidor Express con TypeScript + PostgreSQL',
     endpoints: {
       health: 'GET /health',
       login: 'POST /api/auth/login',
@@ -212,13 +126,6 @@ app.use(
   ) => {
     console.error('❌ Error del servidor:', err.message);
 
-    if (err.message.includes('Origen no permitido por CORS')) {
-      return res.status(403).json({
-        error: 'CORS',
-        message: err.message,
-      });
-    }
-
     return res.status(500).json({
       error: 'Error interno del servidor',
       message:
@@ -237,10 +144,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('🚀 Inventario API iniciada');
   console.log(`📡 Puerto: ${PORT}`);
-  console.log(`🌐 CORS permitido:`);
-  allowedOrigins.forEach((origin) => {
-    console.log(`   ✓ ${origin}`);
-  });
+  console.log('🌐 CORS: Abierto a cualquier origen (*)');
   console.log(
     `🌍 Entorno: ${process.env.NODE_ENV || 'development'}`
   );
