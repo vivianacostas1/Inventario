@@ -25,13 +25,14 @@ import purchaseItemRoutes from './routes/purchase-items';
 import saleItemRoutes from './routes/sale-items';
 import productAnalyticsRoutes from './routes/product-analytics';
 import authRoutes from './routes/auth.routes';
+import tiendaProductRoutes from './routes/tienda-product.routes';
 
 // Crear aplicación
 const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
 
 // ────────────────────────────────────────────────────
-// CORS (Estructura exacta adaptada proyecto funcional)
+// CORS (Estructura adaptada para aceptar cualquier puerto local)
 // ────────────────────────────────────────────────────
 
 const allowedOrigins = [
@@ -48,7 +49,12 @@ app.use(
         return callback(null, true);
       }
 
-      // Permitir localhost y dominio definido en FRONTEND_URL
+      // Permitir automáticamente cualquier puerto de localhost o 127.0.0.1 (ideal para Flutter/React)
+      if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        return callback(null, true);
+      }
+
+      // Permitir dominios fijos en allowedOrigins
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -60,6 +66,7 @@ app.use(
       ) {
         return callback(null, true);
       }
+
       console.log('❌ CORS bloqueó el origen:', origin);
       callback(new Error('Origen no permitido por CORS'));
     },
@@ -100,6 +107,7 @@ app.use('/api/sale-items', saleItemRoutes);
 app.use('/api/product-analytics', productAnalyticsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/tienda-products', tiendaProductRoutes);
 
 // Ruta principal
 app.get('/', (req: Request, res: Response) => {
@@ -122,7 +130,7 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({
-    error: 'Ruta no encontradasss',
+    error: 'Ruta no encontrada',
     path: req.path,
     method: req.method,
   });
