@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 // Cargar variables de entorno
-dotenv.config();
+dotenv.config(); 
 
 // Importar rutas de Inventario
 import healthRouter from './routes/health';
@@ -31,7 +31,7 @@ const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
 
 // ────────────────────────────────────────────────────
-// CORS (Estructura exacta adaptada de tu proyecto funcional)
+// CORS (Estructura exacta adaptada proyecto funcional)
 // ────────────────────────────────────────────────────
 
 const allowedOrigins = [
@@ -53,8 +53,6 @@ app.use(
         return callback(null, true);
       }
 
-      // Permitir todos los despliegues de Vercel del proyecto (puedes ajustar el prefijo si lo deseas, o dejar .vercel.app)
-      // Permitir todos los despliegues de Vercel del proyecto
       // Permitir despliegues de Vercel que comiencen con inventario-
       if (
         origin.startsWith('https://inventario-') &&
@@ -71,9 +69,6 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
-
-// Habilitar preflight global para evitar 404 en OPTIONS
-app.options('*', cors());
 
 // Parsear JSON
 app.use(express.json());
@@ -127,7 +122,7 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({
-    error: 'Ruta no encontrada',
+    error: 'Ruta no encontradasss',
     path: req.path,
     method: req.method,
   });
