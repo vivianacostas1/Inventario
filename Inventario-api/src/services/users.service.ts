@@ -1,5 +1,6 @@
-import { prisma } from "../config/prisma"; // Asegúrate de tener tu instancia de prisma configurada
+import { prisma } from "../config/prisma";
 import { CreateUserDTO, UpdateUserDTO } from "../types/user.types";
+import bcrypt from "bcrypt";
 
 export class UserService {
   static async getAll() {
@@ -29,9 +30,17 @@ export class UserService {
     });
   }
 
-  static async create(data: CreateUserDTO) {
+  static async create(data: any) {
+    // Ciframos la contraseña que viene del frontend
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
     return await prisma.user.create({
-      data,
+      data: {
+        name: data.name,
+        email: data.email,
+        passwordHash: hashedPassword, // Asignamos correctamente el hash a Prisma
+        role: data.role,
+      },
     });
   }
 
@@ -43,7 +52,6 @@ export class UserService {
   }
 
   static async delete(id: string) {
-    // Eliminación lógica (cambiar estado activo a falso) o física según prefieras
     return await prisma.user.update({
       where: { id },
       data: { isActive: false },
