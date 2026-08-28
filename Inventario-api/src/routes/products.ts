@@ -8,10 +8,10 @@ const router = Router();
 router.use(verifyToken);
 
 router.get("/", ProductController.getProducts);
+router.get("/next-sku", ProductController.getNextSku); // <-- ¡Movido arriba de :id!
 router.get("/:id", ProductController.getProductById);
 router.post("/", ProductController.createProduct);
 router.put("/:id", ProductController.updateProduct);
-router.get("/next-sku", ProductController.getNextSku);
 router.delete("/:id", ProductController.deleteProduct);
 
 export default router;
