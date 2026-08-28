@@ -3,15 +3,8 @@ import api from '../api/axios';
 
 export function ProductsPage() {
   const [products, setProducts] = useState([]);
-  const [shareholders, setShareholders] = useState([]);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  
-  // Estados para el modal de Asignar Accionista (se mantiene por si se usa en otro flujo, o puedes limpiarlo si ya no se requiere)
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [shareholderId, setShareholderId] = useState('');
-  const [quantity, setQuantity] = useState(0);
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   // Estados para el modal de Crear/Editar Producto
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -29,17 +22,21 @@ export function ProductsPage() {
 
   const fetchData = async () => {
     try {
-      const [prodRes, shRes, catRes, supRes] = await Promise.all([
+      const [prodRes, catRes, supRes] = await Promise.allSettled([
         api.get('/products'),
-        api.get('/shareholders'),
         api.get('/categories'),
         api.get('/suppliers')
       ]);
 
-      setProducts(Array.isArray(prodRes.data) ? prodRes.data : prodRes.data?.data || []);
-      setShareholders(Array.isArray(shRes.data) ? shRes.data : shRes.data?.data || []);
-      setCategories(Array.isArray(catRes.data) ? catRes.data : catRes.data?.data || []);
-      setSuppliers(Array.isArray(supRes.data) ? supRes.data : supRes.data?.data || []);
+      if (prodRes.status === 'fulfilled') {
+        setProducts(Array.isArray(prodRes.value.data) ? prodRes.value.data : prodRes.value.data?.data || []);
+      }
+      if (catRes.status === 'fulfilled') {
+        setCategories(Array.isArray(catRes.value.data) ? catRes.value.data : catRes.value.data?.data || []);
+      }
+      if (supRes.status === 'fulfilled') {
+        setSuppliers(Array.isArray(supRes.value.data) ? supRes.value.data : supRes.value.data?.data || []);
+      }
     } catch (error) {
       console.error("Error al cargar datos", error);
     }
