@@ -1,4 +1,6 @@
 import express, { Application, Request, Response } from 'express';
+import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
@@ -26,6 +28,7 @@ import saleItemRoutes from './routes/sale-items';
 import productAnalyticsRoutes from './routes/product-analytics';
 import authRoutes from './routes/auth.routes';
 import tiendaProductRoutes from './routes/tienda-product.routes';
+import imageRoutes from './controllers/imageController';
 
 // Crear aplicación
 const app: Application = express();
@@ -84,6 +87,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ────────────────────────────────────────────────────
+// ARCHIVOS ESTÁTICOS (Imágenes)
+// ────────────────────────────────────────────────────
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadDir));
+
+// ────────────────────────────────────────────────────
 // RUTAS
 // ────────────────────────────────────────────────────
 
@@ -108,6 +120,7 @@ app.use('/api/product-analytics', productAnalyticsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/tienda-products', tiendaProductRoutes);
+app.use('/api', imageRoutes); //
 
 // Ruta principal
 app.get('/', (req: Request, res: Response) => {

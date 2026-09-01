@@ -1,33 +1,32 @@
 import { prisma } from "../config/prisma";
-import { CreateProductDTO, UpdateProductDTO } from "../types/product";
+import {
+  CreateProductDTO,
+  UpdateProductDTO,
+} from "../types/product";
 
 export class ProductService {
+
   static async getAll() {
-    const count = await prisma.product.count({
-      where: { isActive: true },
-    });
-
-    if (count === 0) {
-      return [];
-    }
-
     return await prisma.product.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+      },
       include: {
         category: true,
         supplier: true,
-        shareholderProducts: {
-          include: {
-            shareholder: true,
-          },
-        },
+        shareholderProducts: true,
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
   }
 
   static async getById(id: string) {
     return await prisma.product.findUnique({
-      where: { id },
+      where: {
+        id,
+      },
       include: {
         category: true,
         supplier: true,
@@ -36,94 +35,204 @@ export class ProductService {
             warehouse: true,
           },
         },
-        shareholderProducts: {
-          include: {
-            shareholder: true,
-          },
-        },
+        shareholderProducts: true,
       },
     });
   }
 
-  static async update(id: string, data: UpdateProductDTO) {
-    const { shareholders, ...productData } = data as any;
-
-    if (shareholders) {
-      await prisma.shareholderProduct.deleteMany({
-        where: { productId: id },
-      });
-    }
-
-    return await prisma.product.update({
-      where: { id },
-      data: {
-        ...productData,
-        shareholderProducts: shareholders ? {
-          create: shareholders.map((shareholderId: string) => ({
-            shareholder: { connect: { id: shareholderId } }
-          }))
-        } : undefined,
-      },
-      include: {
-        category: true,
-        supplier: true,
-        shareholderProducts: { include: { shareholder: true } },
-      },
-    });
-  }
-
-  static async delete(id: string) {
-    return await prisma.product.update({
-      where: { id },
-      data: { isActive: false },
-    });
-  }
-
-  // Función auxiliar para generar el SKU automáticamente (ej. PROD1, PROD2...)
   private static async generateNextSku(): Promise<string> {
     const lastProduct = await prisma.product.findFirst({
-      orderBy: { createdAt: 'desc' },
-      select: { sku: true },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        sku: true,
+      },
     });
 
-    if (!lastProduct || !lastProduct.sku) {
-      return 'PROD1';
+    if (!lastProduct?.sku) {
+      return "PROD1";
     }
 
     const match = lastProduct.sku.match(/\d+$/);
+
     if (!match) {
-      return 'PROD1';
+      return "PROD1";
     }
 
-    const nextNumber = parseInt(match[0], 10) + 1;
+    const nextNumber =
+      parseInt(match[0], 10) + 1;
+
     return `PROD${nextNumber}`;
   }
 
-  // Única función create limpia
+  // ==========================================
+  // CREAR PRODUCTO
+  // ==========================================
+
   static async create(data: CreateProductDTO) {
-    const { shareholders, ...productData } = data as any;
 
-    const generatedSku = await ProductService.generateNextSku();
+    if (!data) {
+      throw new Error(
+        "No se recibieron datos para crear el producto"
+      );
+    }
 
-    return await prisma.product.create({
-      data: {
-        ...productData,
-        sku: generatedSku,
-        shareholderProducts: shareholders && shareholders.length > 0 ? {
-          create: shareholders.map((shareholderId: string) => ({
-            shareholder: { connect: { id: shareholderId } }
-          }))
-        } : undefined,
+    const generatedSku =
+      await ProductService.generateNextSku();
+
+    const product =
+      await prisma.product.create({
+        data: {
+          sku: generatedSku,
+
+          name: data.name,
+
+          description:
+            data.description || null,
+
+          categoryId:
+            data.categoryId,
+
+          supplierId:
+            data.supplierId,
+
+          costPrice:
+            Number(data.costPrice),
+
+          unitPrice:
+            Number(data.unitPrice),
+
+          minStock:
+            data.minStock !== undefined
+              ? Number(data.minStock)
+              : 0,
+
+          maxStock:
+            data.maxStock !== undefined
+              ? Number(data.maxStock)
+              : null,
+
+          imageUrl:
+            data.imageUrl || null,
+        },
+
+        include: {
+          category: true,
+          supplier: true,
+          shareholderProducts: true,
+        },
+      });
+
+    return product;
+  }
+
+  // ==========================================
+  // ACTUALIZAR PRODUCTO
+  // ==========================================
+
+  static async update(
+    id: string,
+    data: UpdateProductDTO
+  ) {
+
+    if (!data) {
+      throw new Error(
+        "No se recibieron datos para actualizar el producto"
+      );
+    }
+
+    const productData: any = {};
+
+    if (data.sku !== undefined) {
+      productData.sku = data.sku;
+    }
+
+    if (data.name !== undefined) {
+      productData.name = data.name;
+    }
+
+    if (data.description !== undefined) {
+      productData.description =
+        data.description;
+    }
+
+    if (data.categoryId !== undefined) {
+      productData.categoryId =
+        data.categoryId;
+    }
+
+    if (data.supplierId !== undefined) {
+      productData.supplierId =
+        data.supplierId;
+    }
+
+    if (data.costPrice !== undefined) {
+      productData.costPrice =
+        Number(data.costPrice);
+    }
+
+    if (data.unitPrice !== undefined) {
+      productData.unitPrice =
+        Number(data.unitPrice);
+    }
+
+    if (data.minStock !== undefined) {
+      productData.minStock =
+        Number(data.minStock);
+    }
+
+    if (data.maxStock !== undefined) {
+      productData.maxStock =
+        Number(data.maxStock);
+    }
+
+    if (data.imageUrl !== undefined) {
+      productData.imageUrl =
+        data.imageUrl;
+    }
+
+    if (data.isActive !== undefined) {
+      productData.isActive =
+        data.isActive;
+    }
+
+    return await prisma.product.update({
+      where: {
+        id,
       },
+
+      data: productData,
+
       include: {
         category: true,
         supplier: true,
-        shareholderProducts: { include: { shareholder: true } },
+        shareholderProducts: true,
       },
     });
   }
-  // Agrega esto a tu clase ProductService
-static async getNextSku() {
-  return await this.generateNextSku();
-}
+
+  // ==========================================
+  // ELIMINAR / DESACTIVAR
+  // ==========================================
+
+  static async delete(id: string) {
+    return await prisma.product.update({
+      where: {
+        id,
+      },
+
+      data: {
+        isActive: false,
+      },
+    });
+  }
+
+  // ==========================================
+  // SIGUIENTE SKU
+  // ==========================================
+
+  static async getNextSku() {
+    return await ProductService.generateNextSku();
+  }
 }

@@ -188,6 +188,7 @@ model Product {
   costPrice   Decimal  @map("precio_costo") @db.Decimal(12, 2)
   categoryId  String   @map("categoria_id")
   supplierId  String   @map("proveedor_id")
+  imageUrl    String?  @map("imagen_url") // <-- Campo añadido para la imagen
   minStock    Int      @default(0) @map("stock_minimo")
   maxStock    Int?     @map("stock_maximo")
   isActive    Boolean  @default(true) @map("esta_activo")
@@ -318,8 +319,8 @@ model Sale {
   totalAmount Decimal    @default(0) @map("monto_total") @db.Decimal(14, 2)
   createdAt   DateTime   @default(now()) @map("creado_en")
 
-  customer Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  user     User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Restrict)
   items    SaleItem[]
 
   @@index([customerId])
@@ -333,14 +334,14 @@ model SaleItem {
   id            String  @id @default(uuid())
   saleId        String  @map("venta_id")
   productId     String  @map("producto_id")
-  shareholderId String? @map("accionista_id") // <-- Campo añadido
+  shareholderId String? @map("accionista_id")
   quantity      Int     @map("cantidad")
   unitPrice     Decimal @map("precio_unitario") @db.Decimal(12, 2)
   subtotal      Decimal @map("subtotal") @db.Decimal(14, 2)
 
   sale        Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
   product     Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
-  shareholder Shareholder? @relation(fields: [shareholderId], references: [id], onDelete: SetNull) // <-- Relación añadida
+  shareholder Shareholder? @relation(fields: [shareholderId], references: [id], onDelete: SetNull)
 
   @@index([saleId])
   @@index([productId])
