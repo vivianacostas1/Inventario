@@ -9,6 +9,11 @@ export function ProductsPage() {
   // Estados para el modal de Crear/Editar Producto
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  
+  // Nuevo estado para la imagen seleccionada y su vista previa
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const [newProduct, setNewProduct] = useState({
     sku: '',
     name: '',
@@ -48,6 +53,8 @@ export function ProductsPage() {
 
   const handleOpenCreateModal = async () => {
     setEditingProductId(null);
+    setImageFile(null);
+    setImagePreview(null);
     try {
       const res = await api.get('/products/next-sku');
       setNewProduct({ 
@@ -69,6 +76,8 @@ export function ProductsPage() {
 
   const handleOpenEditModal = (prod: any) => {
     setEditingProductId(prod.id);
+    setImageFile(null);
+    setImagePreview(prod.imageUrl || prod.imagen || null); // Muestra la imagen actual si ya la tiene
     setNewProduct({
       sku: prod.sku || '',
       name: prod.name || '',
@@ -95,37 +104,210 @@ export function ProductsPage() {
     }
   };
 
-  const handleSaveProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        sku: newProduct.sku,
-        name: newProduct.name,
-        categoryId: newProduct.categoryId,
-        supplierId: newProduct.supplierId,
-        costPrice: Number(newProduct.costPrice),
-        unitPrice: Number(newProduct.unitPrice),
-        minStock: Number(newProduct.minStock),
-        maxStock: Number(newProduct.maxStock)
-      };
-
-      if (editingProductId) {
-        await api.put(`/products/${editingProductId}`, payload);
-        alert('¡Producto actualizado con éxito!');
-      } else {
-        await api.post('/products', payload);
-        alert('¡Producto creado con éxito!');
-      }
-
-      setIsCreateModalOpen(false);
-      setEditingProductId(null);
-      setNewProduct({ sku: '', name: '', categoryId: '', supplierId: '', costPrice: 0, unitPrice: 0, minStock: 0, maxStock: 0 });
-      fetchData();
-    } catch (error: any) {
-      console.error("Error al guardar producto", error);
-      alert(error.response?.data?.error || 'No se pudo guardar el producto');
+  // Manejador para cuando seleccionan una imagen en el input file
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file)); // Vista previa instantánea
     }
   };
+
+  const handleSaveProduct = async (
+  e: React.FormEvent
+) => {
+
+  e.preventDefault();
+
+  try {
+
+    const formData = new FormData();
+
+    formData.append(
+      "name",
+      newProduct.name
+    );
+
+    formData.append(
+      "categoryId",
+      newProduct.categoryId
+    );
+
+    formData.append(
+      "supplierId",
+      newProduct.supplierId
+    );
+
+    formData.append(
+      "costPrice",
+      String(newProduct.costPrice)
+    );
+
+    formData.append(
+      "unitPrice",
+      String(newProduct.unitPrice)
+    );
+
+    formData.append(
+      "minStock",
+      String(newProduct.minStock)
+    );
+
+    formData.append(
+      "maxStock",
+      String(newProduct.maxStock)
+    );
+
+    // ----------------------------------
+    // IMAGEN
+    // ----------------------------------
+
+    if (imageFile) {
+
+      console.log(
+        "IMAGEN QUE SE ENVÍA:",
+        imageFile.name
+      );
+
+      console.log(
+        "TIPO:",
+        imageFile.type
+      );
+
+      console.log(
+        "TAMAÑO:",
+        imageFile.size
+      );
+
+      formData.append(
+        "imagen",
+        imageFile
+      );
+
+    } else {
+
+      console.log(
+        "NO SE SELECCIONÓ IMAGEN"
+      );
+    }
+
+    // ----------------------------------
+    // DEBUG DEL FORMDATA
+    // ----------------------------------
+
+    console.log(
+      "========== FORMDATA =========="
+    );
+
+    for (const [
+      key,
+      value
+    ] of formData.entries()) {
+
+      console.log(
+        key,
+        value
+      );
+    }
+
+    console.log(
+      "=============================="
+    );
+
+    // ----------------------------------
+    // CREAR
+    // ----------------------------------
+
+    if (!editingProductId) {
+
+      const response =
+        await api.post(
+          "/products",
+          formData
+        );
+
+      console.log(
+        "RESPUESTA CREAR:",
+        response.data
+      );
+
+      alert(
+        "¡Producto creado con éxito!"
+      );
+
+    } else {
+
+      // --------------------------------
+      // ACTUALIZAR
+      // --------------------------------
+
+      const response =
+        await api.put(
+          `/products/${editingProductId}`,
+          formData
+        );
+
+      console.log(
+        "RESPUESTA ACTUALIZAR:",
+        response.data
+      );
+
+      alert(
+        "¡Producto actualizado con éxito!"
+      );
+    }
+
+    setIsCreateModalOpen(false);
+
+    setEditingProductId(null);
+
+    setImageFile(null);
+
+    setImagePreview(null);
+
+    setNewProduct({
+      sku: "",
+      name: "",
+      categoryId: "",
+      supplierId: "",
+      costPrice: 0,
+      unitPrice: 0,
+      minStock: 0,
+      maxStock: 0,
+    });
+
+    await fetchData();
+
+  } catch (error: any) {
+
+    console.error(
+      "===================================="
+    );
+
+    console.error(
+      "ERROR AL GUARDAR PRODUCTO"
+    );
+
+    console.error(
+      error
+    );
+
+    console.error(
+      error?.response?.data
+    );
+
+    console.error(
+      "===================================="
+    );
+
+    alert(
+      error?.response?.data?.details ||
+      error?.response?.data?.error ||
+      "No se pudo guardar el producto"
+    );
+  }
+};
+
 
   return (
     <div className="p-8 max-w-7xl mx-auto text-white">
@@ -148,6 +330,7 @@ export function ProductsPage() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-gray-700 text-gray-400 text-sm">
+              <th className="p-4">IMAGEN</th>
               <th className="p-4">SKU</th>
               <th className="p-4">NOMBRE</th>
               <th className="p-4">CATEGORÍA</th>
@@ -161,9 +344,17 @@ export function ProductsPage() {
             {products.map((prod: any) => {
                const list = prod.shareholders || prod.shareholderProducts || prod.accionistas_productos || [];
                const totalAssigned = list.reduce((acc: number, sp: any) => acc + (sp.quantity || sp.cantidad || 0), 0);
+               const productImg = prod.imageUrl || prod.imagen;
 
               return (
                 <tr key={prod.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                  <td className="p-4">
+                    {productImg ? (
+                      <img src={productImg} alt={prod.name} className="w-10 h-10 object-cover rounded" />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-400">Sin img</div>
+                    )}
+                  </td>
                   <td className="p-4 text-indigo-300 font-medium">{prod.sku}</td>
                   <td className="p-4">{prod.name}</td>
                   <td className="p-4">
@@ -171,14 +362,11 @@ export function ProductsPage() {
                       {prod.category?.name || 'Sin categoría'}
                     </span>
                   </td>
-                  
                   <td className="p-4 text-gray-300">${prod.costPrice ?? prod.precio_costo ?? 0}</td>
                   <td className="p-4 text-green-400 font-semibold">${prod.unitPrice ?? prod.precio_unitario ?? 0}</td>
-                  
                   <td className="p-4 font-bold text-indigo-400">
                     {totalAssigned} un.
                   </td>
-
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button 
@@ -190,7 +378,6 @@ export function ProductsPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-
                       <button 
                         onClick={() => handleDeleteProduct(prod.id, prod.name)}
                         title="Eliminar Producto"
@@ -241,6 +428,22 @@ export function ProductsPage() {
                   className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
                   required
                 />
+              </div>
+
+              {/* Input para seleccionar la imagen y su vista previa */}
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Imagen del Producto</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
+                />
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img src={imagePreview} alt="Vista previa" className="w-20 h-20 object-cover rounded border border-gray-600" />
+                  </div>
+                )}
               </div>
 
               <div>
