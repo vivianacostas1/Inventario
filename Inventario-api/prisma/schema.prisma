@@ -121,7 +121,7 @@ model Product {
   id                  String               @id @default(uuid())
   sku                 String               @unique @map("sku")
   name                String               @map("nombre")
-  description         String?              @map("descripcion")
+  description         String?              @map("descripcion") @db.Text
   unitPrice           Decimal              @map("precio_unitario") @db.Decimal(12, 2)
   costPrice           Decimal              @map("precio_costo") @db.Decimal(12, 2)
   categoryId          String               @map("categoria_id")
@@ -290,6 +290,7 @@ model ProductAnalytics {
   @@map("analisis_productos")
 }
 
+/// Roles de usuario
 enum Role {
   ADMIN
   MANAGER

@@ -89,7 +89,10 @@ export class ProductService {
           name: data.name,
 
           description:
-            data.description || null,
+            data.description &&
+            data.description.trim() !== ""
+              ? data.description
+              : null,
 
           categoryId:
             data.categoryId,
