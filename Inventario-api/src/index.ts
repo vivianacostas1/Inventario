@@ -119,7 +119,7 @@ app.use('/api/sale-items', saleItemRoutes);
 app.use('/api/product-analytics', productAnalyticsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/tienda-products', tiendaProductRoutes);
+app.use('/api/tienda-products', tiendaProductRoutes); 
 app.use('/api', imageRoutes); //
 
 // Ruta principal
