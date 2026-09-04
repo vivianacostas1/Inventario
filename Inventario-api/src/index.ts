@@ -35,7 +35,7 @@ const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
 
 // ────────────────────────────────────────────────────
-// CORS (Estructura adaptada para aceptar cualquier puerto local)
+// CORS (Estructura adaptada para aceptar cualquier Vercel y Localhost)
 // ────────────────────────────────────────────────────
 
 const allowedOrigins = [
@@ -52,7 +52,7 @@ app.use(
         return callback(null, true);
       }
 
-      // Permitir automáticamente cualquier puerto de localhost o 127.0.0.1 (ideal para Flutter/React)
+      // Permitir automáticamente cualquier puerto de localhost o 127.0.0.1
       if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
         return callback(null, true);
       }
@@ -62,11 +62,8 @@ app.use(
         return callback(null, true);
       }
 
-      // Permitir despliegues de Vercel que comiencen con inventario-
-      if (
-        origin.startsWith('https://inventario-') &&
-        origin.endsWith('.vercel.app')
-      ) {
+      // CORREGIDO: Permitir cualquier despliegue de Vercel (*.vercel.app)
+      if (origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
 
@@ -120,7 +117,7 @@ app.use('/api/product-analytics', productAnalyticsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/tienda-products', tiendaProductRoutes); 
-app.use('/api', imageRoutes); //
+app.use('/api', imageRoutes);
 
 // Ruta principal
 app.get('/', (req: Request, res: Response) => {
