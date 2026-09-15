@@ -7,14 +7,15 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(uuid())
-  name           String          @map("nombre")
-  email          String          @unique @map("correo")
-  passwordHash   String          @map("password_hash")
-  role           Role            @default(SALES) @map("rol")
-  isActive       Boolean         @default(true) @map("esta_activo")
-  createdAt      DateTime        @default(now()) @map("creado_en")
-  updatedAt      DateTime        @updatedAt @map("actualizado_en")
+  id           String   @id @default(uuid())
+  name         String   @map("nombre")
+  email        String   @unique @map("correo")
+  passwordHash String   @map("password_hash")
+  role         Role     @default(SALES) @map("rol")
+  isActive     Boolean  @default(true) @map("esta_activo")
+  createdAt    DateTime @default(now()) @map("creado_en")
+  updatedAt    DateTime @updatedAt @map("actualizado_en")
+
   purchases      Purchase[]
   stockMovements StockMovement[]
   sales          Sale[]
@@ -25,18 +26,19 @@ model User {
 }
 
 model Supplier {
-  id          String     @id @default(uuid())
-  name        String     @map("nombre")
-  contactName String?    @map("nombre_contacto")
-  email       String?    @map("correo")
-  phone       String?    @map("telefono")
-  address     String?    @map("direccion")
-  taxId       String?    @map("nit")
-  isActive    Boolean    @default(true) @map("esta_activo")
-  createdAt   DateTime   @default(now()) @map("creado_en")
-  updatedAt   DateTime   @updatedAt @map("actualizado_en")
-  purchases   Purchase[]
-  products    Product[]
+  id          String   @id @default(uuid())
+  name        String   @map("nombre")
+  contactName String?  @map("nombre_contacto")
+  email       String?  @map("correo")
+  phone       String?  @map("telefono")
+  address     String?  @map("direccion")
+  taxId       String?  @map("nit")
+  isActive    Boolean  @default(true) @map("esta_activo")
+  createdAt   DateTime @default(now()) @map("creado_en")
+  updatedAt   DateTime @updatedAt @map("actualizado_en")
+
+  purchases Purchase[]
+  products  Product[]
 
   @@index([name])
   @@index([taxId])
@@ -44,15 +46,16 @@ model Supplier {
 }
 
 model Shareholder {
-  id                  String               @id @default(uuid())
-  name                String               @map("nombre")
-  email               String?              @unique @map("correo")
-  phone               String?              @map("telefono")
-  sharePercentage     Decimal              @map("porcentaje_participacion") @db.Decimal(5, 2)
-  investmentAmount    Decimal              @map("monto_inversion") @db.Decimal(14, 2)
-  joinedAt            DateTime             @default(now()) @map("fecha_ingreso")
-  isActive            Boolean              @default(true) @map("esta_activo")
-  createdAt           DateTime             @default(now()) @map("creado_en")
+  id               String   @id @default(uuid())
+  name             String   @map("nombre")
+  email            String?  @unique @map("correo")
+  phone            String?  @map("telefono")
+  sharePercentage  Decimal  @map("porcentaje_participacion") @db.Decimal(5, 2)
+  investmentAmount Decimal  @map("monto_inversion") @db.Decimal(14, 2)
+  joinedAt         DateTime @default(now()) @map("fecha_ingreso")
+  isActive         Boolean  @default(true) @map("esta_activo")
+  createdAt        DateTime @default(now()) @map("creado_en")
+
   shareholderProducts ShareholderProduct[]
   purchases           Purchase[]
   saleItems           SaleItem[]
@@ -61,18 +64,17 @@ model Shareholder {
   @@map("accionistas")
 }
 
-/// Inversion de un accionista en un producto especifico.
-/// Un dividendo SOLO puede existir a traves de esta relacion,
-/// garantizando que provenga de un producto en el que el accionista invirtio.
 model ShareholderProduct {
-  id            String      @id @default(uuid())
-  shareholderId String      @map("accionista_id")
-  productId     String      @map("producto_id")
-  assignedAt    DateTime    @default(now()) @map("asignado_en")
-  quantity      Int         @default(0) @map("cantidad")
-  shareholder   Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
-  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  dividends     Dividend[]
+  id            String   @id @default(uuid())
+  shareholderId String   @map("accionista_id")
+  productId     String   @map("producto_id")
+  assignedAt    DateTime @default(now()) @map("asignado_en")
+  quantity      Int      @default(0) @map("cantidad")
+
+  shareholder Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  dividends Dividend[]
 
   @@unique([shareholderId, productId])
   @@index([shareholderId])
@@ -81,35 +83,38 @@ model ShareholderProduct {
 }
 
 model Dividend {
-  id                   String             @id @default(uuid())
-  amount               Decimal            @map("monto") @db.Decimal(14, 2)
-  period               String             @map("periodo")
-  paidAt               DateTime           @default(now()) @map("fecha_pago")
-  notes                String?            @map("notas")
-  createdAt            DateTime           @default(now()) @map("creado_en")
-  shareholderProductId String             @map("accionista_producto_id")
-  shareholderProduct   ShareholderProduct @relation(fields: [shareholderProductId], references: [id], onDelete: Cascade)
+  id                   String   @id @default(uuid())
+  amount               Decimal  @map("monto") @db.Decimal(14, 2)
+  period               String   @map("periodo")
+  paidAt               DateTime @default(now()) @map("fecha_pago")
+  notes                String?  @map("notas")
+  createdAt            DateTime @default(now()) @map("creado_en")
+  shareholderProductId String   @map("accionista_producto_id")
+
+  shareholderProduct ShareholderProduct @relation(fields: [shareholderProductId], references: [id], onDelete: Cascade)
 
   @@index([shareholderProductId])
   @@map("dividendos")
 }
 
 model Category {
-  id          String    @id @default(uuid())
-  name        String    @unique @map("nombre")
-  description String?   @map("descripcion")
-  createdAt   DateTime  @default(now()) @map("creado_en")
-  products    Product[]
+  id          String   @id @default(uuid())
+  name        String   @unique @map("nombre")
+  description String?  @map("descripcion")
+  createdAt   DateTime @default(now()) @map("creado_en")
+
+  products Product[]
 
   @@index([name])
   @@map("categorias")
 }
 
 model Warehouse {
-  id             String          @id @default(uuid())
-  name           String          @map("nombre")
-  location       String?         @map("ubicacion")
-  createdAt      DateTime        @default(now()) @map("creado_en")
+  id        String   @id @default(uuid())
+  name      String   @map("nombre")
+  location  String?  @map("ubicacion")
+  createdAt DateTime @default(now()) @map("creado_en")
+
   stockMovements StockMovement[]
   stocks         Stock[]
 
@@ -118,45 +123,71 @@ model Warehouse {
 }
 
 model Product {
-  id                  String               @id @default(uuid())
-  sku                 String               @unique @map("sku")
-  name                String               @map("nombre")
-  description         String?              @map("descripcion") @db.Text
-  unitPrice           Decimal              @map("precio_unitario") @db.Decimal(12, 2)
-  costPrice           Decimal              @map("precio_costo") @db.Decimal(12, 2)
-  categoryId          String               @map("categoria_id")
-  supplierId          String               @map("proveedor_id")
-  minStock            Int                  @default(0) @map("stock_minimo")
-  maxStock            Int?                 @map("stock_maximo")
-  isActive            Boolean              @default(true) @map("esta_activo")
-  createdAt           DateTime             @default(now()) @map("creado_en")
-  updatedAt           DateTime             @updatedAt @map("actualizado_en")
-  imageUrl            String?              @map("imagen_url")
+  id          String  @id @default(uuid())
+  sku         String  @unique @map("sku")
+  name        String  @map("nombre")
+  description String? @map("descripcion")
+
+  unitPrice Decimal @map("precio_unitario") @db.Decimal(12, 2)
+  costPrice Decimal @map("precio_costo") @db.Decimal(12, 2)
+
+  // Oferta
+  isOnSale  Boolean  @default(false) @map("esta_en_oferta")
+  salePrice Decimal? @map("precio_oferta") @db.Decimal(12, 2)
+
+  categoryId String @map("categoria_id")
+  supplierId String @map("proveedor_id")
+
+  minStock Int  @default(0) @map("stock_minimo")
+  maxStock Int? @map("stock_maximo")
+
+  isActive  Boolean  @default(true) @map("esta_activo")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @updatedAt @map("actualizado_en")
+
+  imageUrl String? @map("imagen_url")
+
   shareholderProducts ShareholderProduct[]
   analytics           ProductAnalytics?
   purchaseItems       PurchaseItem[]
   saleItems           SaleItem[]
   stockMovements      StockMovement[]
-  category            Category             @relation(fields: [categoryId], references: [id])
-  supplier            Supplier             @relation(fields: [supplierId], references: [id])
-  stocks              Stock[]
+  images              ProductImage[]
+
+  category Category @relation(fields: [categoryId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  stocks Stock[]
 
   @@index([sku])
   @@index([categoryId])
   @@index([supplierId])
   @@index([name])
+  @@index([isOnSale])
   @@map("productos")
 }
 
-/// Stock actual por almacen (control de stock)
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String   @map("producto_id")
+  url       String   @map("url")
+  createdAt DateTime @default(now()) @map("creado_en")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("producto_imagenes")
+}
+
 model Stock {
-  id          String    @id @default(uuid())
-  productId   String    @map("producto_id")
-  warehouseId String    @map("almacen_id")
-  quantity    Int       @default(0) @map("cantidad")
-  updatedAt   DateTime  @updatedAt @map("actualizado_en")
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  productId   String   @map("producto_id")
+  warehouseId String   @map("almacen_id")
+  quantity    Int      @default(0) @map("cantidad")
+  updatedAt   DateTime @updatedAt @map("actualizado_en")
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, warehouseId])
   @@index([productId])
@@ -164,7 +195,6 @@ model Stock {
   @@map("stocks")
 }
 
-/// Historial de movimientos de inventario (entradas, salidas, ajustes, transferencias)
 model StockMovement {
   id          String       @id @default(uuid())
   productId   String       @map("producto_id")
@@ -175,9 +205,10 @@ model StockMovement {
   reason      String?      @map("motivo")
   referenceId String?      @map("referencia_id")
   createdAt   DateTime     @default(now()) @map("creado_en")
-  warehouse   Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user        User         @relation(fields: [userId], references: [id])
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
 
   @@index([productId])
   @@index([warehouseId])
@@ -195,10 +226,12 @@ model Purchase {
   createdAt     DateTime       @default(now()) @map("creado_en")
   receivedAt    DateTime?      @map("fecha_recepcion")
   shareholderId String?        @map("accionista_id")
-  shareholder   Shareholder?   @relation(fields: [shareholderId], references: [id])
-  supplier      Supplier       @relation(fields: [supplierId], references: [id])
-  user          User           @relation(fields: [userId], references: [id])
-  items         PurchaseItem[]
+
+  shareholder Shareholder? @relation(fields: [shareholderId], references: [id])
+  supplier    Supplier     @relation(fields: [supplierId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+
+  items PurchaseItem[]
 
   @@index([supplierId])
   @@index([shareholderId])
@@ -207,14 +240,15 @@ model Purchase {
 }
 
 model PurchaseItem {
-  id         String   @id @default(uuid())
-  purchaseId String   @map("compra_id")
-  productId  String   @map("producto_id")
-  quantity   Int      @map("cantidad")
-  unitCost   Decimal  @map("costo_unitario") @db.Decimal(12, 2)
-  subtotal   Decimal  @map("subtotal") @db.Decimal(14, 2)
-  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [productId], references: [id])
+  id         String  @id @default(uuid())
+  purchaseId String  @map("compra_id")
+  productId  String  @map("producto_id")
+  quantity   Int     @map("cantidad")
+  unitCost   Decimal @map("costo_unitario") @db.Decimal(12, 2)
+  subtotal   Decimal @map("subtotal") @db.Decimal(14, 2)
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
 
   @@index([purchaseId])
   @@index([productId])
@@ -228,7 +262,8 @@ model Customer {
   phone     String?  @map("telefono")
   address   String?  @map("direccion")
   createdAt DateTime @default(now()) @map("creado_en")
-  sales     Sale[]
+
+  sales Sale[]
 
   @@index([email])
   @@map("clientes")
@@ -241,9 +276,11 @@ model Sale {
   status      SaleStatus @default(PENDING) @map("estado")
   totalAmount Decimal    @default(0) @map("monto_total") @db.Decimal(14, 2)
   createdAt   DateTime   @default(now()) @map("creado_en")
-  items       SaleItem[]
-  customer    Customer?  @relation(fields: [customerId], references: [id])
-  user        User       @relation(fields: [userId], references: [id])
+
+  items SaleItem[]
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
 
   @@index([customerId])
   @@index([userId])
@@ -253,16 +290,17 @@ model Sale {
 }
 
 model SaleItem {
-  id            String       @id @default(uuid())
-  saleId        String       @map("venta_id")
-  productId     String       @map("producto_id")
-  quantity      Int          @map("cantidad")
-  unitPrice     Decimal      @map("precio_unitario") @db.Decimal(12, 2)
-  subtotal      Decimal      @map("subtotal") @db.Decimal(14, 2)
-  shareholderId String?      @map("accionista_id")
-  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id])
-  product       Product      @relation(fields: [productId], references: [id])
-  sale          Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  id            String  @id @default(uuid())
+  saleId        String  @map("venta_id")
+  productId     String  @map("producto_id")
+  quantity      Int     @map("cantidad")
+  unitPrice     Decimal @map("precio_unitario") @db.Decimal(12, 2)
+  subtotal      Decimal @map("subtotal") @db.Decimal(14, 2)
+  shareholderId String? @map("accionista_id")
+
+  shareholder Shareholder? @relation(fields: [shareholderId], references: [id])
+  product     Product      @relation(fields: [productId], references: [id])
+  sale        Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@index([saleId])
   @@index([productId])
@@ -283,14 +321,14 @@ model ProductAnalytics {
   isSlowMoving        Boolean   @default(false) @map("movimiento_lento")
   needsReorder        Boolean   @default(false) @map("necesita_reposicion")
   computedAt          DateTime  @default(now()) @map("calculado_en")
-  product             Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([needsReorder])
   @@index([isSlowMoving])
   @@map("analisis_productos")
 }
 
-/// Roles de usuario
 enum Role {
   ADMIN
   MANAGER

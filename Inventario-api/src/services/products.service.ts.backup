@@ -1,0 +1,283 @@
+import { prisma } from "../config/prisma";
+import {
+  CreateProductDTO,
+  UpdateProductDTO,
+} from "../types/product";
+
+export class ProductService {
+
+  // ==========================================
+  // OBTENER TODOS LOS PRODUCTOS
+  // ==========================================
+
+  static async getAll() {
+    console.log("PRODUCT SERVICE: INICIO");
+
+    const products = await prisma.product.findMany({
+      where: {
+        isActive: true,
+      },
+      include: {
+        images: true,
+      },
+    });
+
+    console.log(
+      "PRODUCT SERVICE: PRODUCTOS:",
+      products.length
+    );
+
+    return products;
+  }
+
+  // ==========================================
+  // OBTENER PRODUCTO POR ID
+  // ==========================================
+
+  static async getById(id: string) {
+    return await prisma.product.findUnique({
+      where: {
+        id,
+      },
+
+      include: {
+        category: true,
+        supplier: true,
+
+        stocks: {
+          include: {
+            warehouse: true,
+          },
+        },
+
+        shareholderProducts: true,
+
+        images: true,
+      },
+    });
+  }
+
+  // ==========================================
+  // GENERAR SIGUIENTE SKU
+  // ==========================================
+
+  private static async generateNextSku(): Promise<string> {
+    const lastProduct = await prisma.product.findFirst({
+      orderBy: {
+        createdAt: "desc",
+      },
+
+      select: {
+        sku: true,
+      },
+    });
+
+    if (!lastProduct?.sku) {
+      return "PROD1";
+    }
+
+    const match = lastProduct.sku.match(/\d+$/);
+
+    if (!match) {
+      return "PROD1";
+    }
+
+    const nextNumber =
+      parseInt(match[0], 10) + 1;
+
+    return `PROD${nextNumber}`;
+  }
+
+  // ==========================================
+  // CREAR PRODUCTO
+  // ==========================================
+
+  static async create(
+    data: CreateProductDTO,
+    imageUrls: string[] = []
+  ) {
+    if (!data) {
+      throw new Error(
+        "No se recibieron datos para crear el producto"
+      );
+    }
+
+    const generatedSku =
+      await ProductService.generateNextSku();
+
+    const product =
+      await prisma.product.create({
+        data: {
+          sku: generatedSku,
+
+          name: data.name,
+
+          description:
+            data.description &&
+            data.description.trim() !== ""
+              ? data.description
+              : null,
+
+          categoryId: data.categoryId,
+
+          supplierId: data.supplierId,
+
+          costPrice: Number(data.costPrice),
+
+          unitPrice: Number(data.unitPrice),
+
+          minStock:
+            data.minStock !== undefined
+              ? Number(data.minStock)
+              : 0,
+
+          maxStock:
+            data.maxStock !== undefined
+              ? Number(data.maxStock)
+              : null,
+
+          // Imagen principal
+          imageUrl:
+            data.imageUrl || null,
+
+          // Imágenes adicionales
+          images:
+            imageUrls.length > 0
+              ? {
+                  create: imageUrls.map((url) => ({
+                    url: url,
+                  })),
+                }
+              : undefined,
+        },
+
+        include: {
+          category: true,
+          supplier: true,
+          shareholderProducts: true,
+          images: true,
+        },
+      });
+
+    return product;
+  }
+
+  // ==========================================
+  // ACTUALIZAR PRODUCTO
+  // ==========================================
+
+  static async update(
+    id: string,
+    data: UpdateProductDTO,
+    imageUrls: string[] = []
+  ) {
+    if (!data) {
+      throw new Error(
+        "No se recibieron datos para actualizar el producto"
+      );
+    }
+
+    const productData: any = {};
+
+    if (data.sku !== undefined) {
+      productData.sku = data.sku;
+    }
+
+    if (data.name !== undefined) {
+      productData.name = data.name;
+    }
+
+    if (data.description !== undefined) {
+      productData.description = data.description;
+    }
+
+    if (data.categoryId !== undefined) {
+      productData.categoryId = data.categoryId;
+    }
+
+    if (data.supplierId !== undefined) {
+      productData.supplierId = data.supplierId;
+    }
+
+    if (data.costPrice !== undefined) {
+      productData.costPrice =
+        Number(data.costPrice);
+    }
+
+    if (data.unitPrice !== undefined) {
+      productData.unitPrice =
+        Number(data.unitPrice);
+    }
+
+    if (data.minStock !== undefined) {
+      productData.minStock =
+        Number(data.minStock);
+    }
+
+    if (data.maxStock !== undefined) {
+      productData.maxStock =
+        Number(data.maxStock);
+    }
+
+    if (data.imageUrl !== undefined) {
+      productData.imageUrl =
+        data.imageUrl;
+    }
+
+    if (data.isActive !== undefined) {
+      productData.isActive =
+        data.isActive;
+    }
+
+    // ========================================
+    // AGREGAR NUEVAS IMÁGENES
+    // ========================================
+
+    if (imageUrls.length > 0) {
+      productData.images = {
+        create: imageUrls.map((url) => ({
+          url: url,
+        })),
+      };
+    }
+
+    return await prisma.product.update({
+      where: {
+        id,
+      },
+
+      data: productData,
+
+      include: {
+        category: true,
+        supplier: true,
+        shareholderProducts: true,
+        images: true,
+      },
+    });
+  }
+
+  // ==========================================
+  // ELIMINAR / DESACTIVAR
+  // ==========================================
+
+  static async delete(id: string) {
+    return await prisma.product.update({
+      where: {
+        id,
+      },
+
+      data: {
+        isActive: false,
+      },
+    });
+  }
+
+  // ==========================================
+  // SIGUIENTE SKU
+  // ==========================================
+
+  static async getNextSku() {
+    return await ProductService.generateNextSku();
+  }
+}

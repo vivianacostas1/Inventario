@@ -1,0 +1,74 @@
+import { Router } from "express";
+import { ProductController } from "../controllers/products.controller";
+import { verifyToken } from "../middlewares/auth.middleware";
+import { upload } from "../middlewares/upload.middleware";
+
+const router = Router();
+
+// ==========================================
+// AUTENTICACIÓN
+// ==========================================
+
+router.use(verifyToken);
+
+// ==========================================
+// OBTENER PRODUCTOS
+// ==========================================
+
+router.get(
+"/",
+ProductController.getProducts
+);
+
+// ==========================================
+// SIGUIENTE SKU
+// ==========================================
+
+router.get(
+"/next-sku",
+ProductController.getNextSku
+);
+
+// ==========================================
+// OBTENER PRODUCTO POR ID
+// ==========================================
+
+router.get(
+"/:id",
+ProductController.getProductById
+);
+
+// ==========================================
+// CREAR PRODUCTO
+// ==========================================
+// Permite hasta 10 imágenes.
+// El nombre del campo debe ser:
+// "imagenes"
+
+router.post(
+"/",
+upload.array("imagenes", 10),
+ProductController.createProduct
+);
+
+// ==========================================
+// ACTUALIZAR PRODUCTO
+// ==========================================
+// Permite agregar hasta 10 imágenes nuevas.
+
+router.put(
+"/:id",
+upload.array("imagenes", 10),
+ProductController.updateProduct
+);
+
+// ==========================================
+// ELIMINAR / DESACTIVAR PRODUCTO
+// ==========================================
+
+router.delete(
+"/:id",
+ProductController.deleteProduct
+);
+
+export default router;

@@ -1,100 +1,211 @@
 import { Request, Response } from "express";
 import { ProductService } from "../services/products.service";
 
-export class ProductController {
+export const ProductController = {
 
-  // ==========================================
-  // OBTENER TODOS LOS PRODUCTOS
-  // ==========================================
+  // ============================================================
+  // OBTENER PRODUCTOS
+  // ============================================================
 
-  static async getProducts(req: Request, res: Response) {
+  async getProducts(
+    req: Request,
+    res: Response
+  ) {
     try {
-      const products = await ProductService.getAll();
 
-      return res.json(products);
+      const products =
+        await ProductService.getProducts();
+
+      return res.status(200).json(
+        products
+      );
 
     } catch (error: any) {
 
-      console.error("Error al obtener productos:", error);
+      console.error(
+        "ERROR AL OBTENER PRODUCTOS:",
+        error
+      );
 
       return res.status(500).json({
-        error: "Error al obtener los productos",
-        details: error.message || String(error),
+        error:
+          "Error al obtener los productos",
+
+        message:
+          error?.message,
       });
     }
-  }
+  },
 
-  // ==========================================
+  // ============================================================
   // OBTENER PRODUCTO POR ID
-  // ==========================================
+  // ============================================================
 
-  static async getProductById(req: Request, res: Response) {
+  async getProductById(
+    req: Request,
+    res: Response
+  ) {
+
     try {
 
-      const id = String(req.params.id);
+      const id =
+        String(req.params.id);
 
-      const product = await ProductService.getById(id);
+      if (
+        !id ||
+        id === "undefined" ||
+        id === "null"
+      ) {
 
-      if (!product) {
-        return res.status(404).json({
-          error: "Producto no encontrado",
+        return res.status(400).json({
+          error:
+            "El ID del producto es obligatorio",
         });
       }
 
-      return res.json(product);
+      const product =
+        await ProductService.getProductById(
+          id
+        );
+
+      if (!product) {
+
+        return res.status(404).json({
+          error:
+            "Producto no encontrado",
+        });
+      }
+
+      return res.status(200).json(
+        product
+      );
 
     } catch (error: any) {
 
-      console.error("Error al obtener producto:", error);
+      console.error(
+        "ERROR AL OBTENER PRODUCTO:",
+        error
+      );
 
       return res.status(500).json({
-        error: "Error al obtener el producto",
-        details: error.message || String(error),
+        error:
+          "Error al obtener el producto",
+
+        message:
+          error?.message,
       });
     }
-  }
+  },
 
-  // ==========================================
-  // CREAR PRODUCTO
-  // ==========================================
+  // ============================================================
+  // SIGUIENTE SKU
+  // ============================================================
 
-  static async createProduct(req: Request, res: Response) {
+  async getNextSku(
+    req: Request,
+    res: Response
+  ) {
+
     try {
 
-      console.log("====================================");
-      console.log("CREANDO PRODUCTO");
-      console.log("BODY:", req.body);
-      console.log("FILE:", req.file);
-      console.log("====================================");
+      const sku =
+        await ProductService.getNextSku();
 
-      /*
-       * CloudinaryStorage ya subió la imagen.
-       * La URL está disponible en req.file.path.
-       */
+      return res.status(200).json({
+        sku,
+      });
 
-      const imageUrl =
-        req.file?.path ||
-        req.body.imageUrl ||
-        req.body.imagen ||
-        null;
+    } catch (error: any) {
 
-      console.log("IMAGEN CLOUDINARY:", imageUrl);
+      console.error(
+        "ERROR AL GENERAR SKU:",
+        error
+      );
 
-      const productData = {
+      return res.status(500).json({
+        error:
+          "Error al generar el SKU",
 
-        sku: req.body.sku,
+        message:
+          error?.message,
+      });
+    }
+  },
 
-        name: req.body.name,
+  // ============================================================
+  // CREAR PRODUCTO
+  // ============================================================
 
-        // =====================================
-        // DESCRIPCIÓN
-        // =====================================
+  async createProduct(
+    req: Request,
+    res: Response
+  ) {
+
+    try {
+
+      const files =
+        Array.isArray(req.files)
+          ? req.files as Express.Multer.File[]
+          : [];
+
+      console.log(
+        "================================"
+      );
+
+      console.log(
+        "CREAR PRODUCTO"
+      );
+
+      console.log(
+        "BODY:",
+        req.body
+      );
+
+      console.log(
+        "ARCHIVOS:",
+        files.length
+      );
+
+      // --------------------------------------------------------
+      // OBTENER URL DE IMÁGENES
+      // --------------------------------------------------------
+
+      const images = files
+        .map((file) => {
+
+          const anyFile =
+            file as any;
+
+          const url =
+            anyFile.path ||
+            anyFile.secure_url ||
+            anyFile.url ||
+            anyFile.location;
+
+          return {
+            url,
+          };
+
+        })
+        .filter(
+          (image) =>
+            Boolean(image.url)
+        );
+
+      // --------------------------------------------------------
+      // DATOS
+      // --------------------------------------------------------
+
+      const data = {
+
+        sku:
+          req.body.sku,
+
+        name:
+          req.body.name,
 
         description:
-          req.body.description !== undefined &&
-          req.body.description !== ""
-            ? req.body.description
-            : null,
+          req.body.description,
 
         categoryId:
           req.body.categoryId,
@@ -103,340 +214,292 @@ export class ProductController {
           req.body.supplierId,
 
         costPrice:
-          req.body.costPrice !== undefined &&
-          req.body.costPrice !== ""
-            ? parseFloat(req.body.costPrice)
-            : 0,
+          req.body.costPrice,
 
         unitPrice:
-          req.body.unitPrice !== undefined &&
-          req.body.unitPrice !== ""
-            ? parseFloat(req.body.unitPrice)
-            : 0,
+          req.body.unitPrice,
 
         minStock:
-          req.body.minStock !== undefined &&
-          req.body.minStock !== ""
-            ? parseInt(req.body.minStock, 10)
-            : 0,
+          req.body.minStock,
 
         maxStock:
-          req.body.maxStock !== undefined &&
-          req.body.maxStock !== ""
-            ? parseInt(req.body.maxStock, 10)
-            : undefined,
+          req.body.maxStock,
 
-        imageUrl:
-          imageUrl,
+        // OFERTA
+        isOnSale:
+          req.body.isOnSale,
+
+        salePrice:
+          req.body.salePrice,
+
+        images,
+
       };
 
-      console.log("====================================");
-      console.log("PRODUCT DATA ANTES DEL SERVICE");
-      console.log(productData);
-      console.log("DESCRIPCIÓN:", productData.description);
-      console.log("IMAGEN:", productData.imageUrl);
-      console.log("====================================");
+      // --------------------------------------------------------
+      // CREAR
+      // --------------------------------------------------------
 
-      const newProduct =
-        await ProductService.create(productData);
-
-      console.log("====================================");
-      console.log("PRODUCTO CREADO");
-      console.log("ID:", newProduct.id);
-      console.log("DESCRIPCIÓN:", newProduct.description);
-      console.log("====================================");
-
-      return res.status(201).json(newProduct);
-
-    } catch (error: any) {
-
-      console.error("====================================");
-      console.error("ERROR AL CREAR PRODUCTO");
-      console.error(error);
-      console.error("STACK:", error?.stack);
-      console.error("====================================");
-
-      return res.status(400).json({
-        error: "Error al crear el producto",
-        details: error.message || String(error),
-      });
-    }
-  }
-
-  // ==========================================
-  // SIGUIENTE SKU
-  // ==========================================
-
-  static async getNextSku(req: Request, res: Response) {
-    try {
-
-      const nextSku =
-        await ProductService.getNextSku();
-
-      return res.json({
-        sku: nextSku,
-      });
-
-    } catch (error: any) {
-
-      console.error(
-        "Error al generar SKU:",
-        error
-      );
-
-      return res.status(500).json({
-        error: "Error al generar SKU",
-        details: error.message || String(error),
-      });
-    }
-  }
-
-  // ==========================================
-  // ACTUALIZAR PRODUCTO
-  // ==========================================
-
-  static async updateProduct(req: Request, res: Response) {
-    try {
-
-      const id =
-        String(req.params.id);
-
-      console.log("====================================");
-      console.log("ACTUALIZANDO PRODUCTO");
-      console.log("ID:", id);
-      console.log("BODY:", req.body);
-      console.log("FILE:", req.file);
-      console.log("====================================");
-
-      /*
-       * CloudinaryStorage ya subió la imagen.
-       *
-       * Si no se seleccionó una imagen nueva,
-       * NO modificamos imageUrl.
-       */
-
-      const imageUrl =
-        req.file?.path;
-
-      const productData: any = {};
-
-      // =====================================
-      // NOMBRE
-      // =====================================
-
-      if (
-        req.body.name !== undefined &&
-        req.body.name !== ""
-      ) {
-        productData.name =
-          req.body.name;
-      }
-
-      // =====================================
-      // DESCRIPCIÓN
-      // =====================================
-
-      if (
-        req.body.description !== undefined
-      ) {
-
-        productData.description =
-          req.body.description;
-      }
-
-      // =====================================
-      // CATEGORÍA
-      // =====================================
-
-      if (
-        req.body.categoryId !== undefined &&
-        req.body.categoryId !== ""
-      ) {
-
-        productData.categoryId =
-          req.body.categoryId;
-      }
-
-      // =====================================
-      // PROVEEDOR
-      // =====================================
-
-      if (
-        req.body.supplierId !== undefined &&
-        req.body.supplierId !== "" &&
-        req.body.supplierId !== "null" &&
-        req.body.supplierId !== "undefined"
-      ) {
-
-        productData.supplierId =
-          req.body.supplierId;
-      }
-
-      // =====================================
-      // SKU
-      // =====================================
-
-      if (
-        req.body.sku !== undefined &&
-        req.body.sku !== ""
-      ) {
-
-        productData.sku =
-          req.body.sku;
-      }
-
-      // =====================================
-      // PRECIO COSTO
-      // =====================================
-
-      if (
-        req.body.costPrice !== undefined &&
-        req.body.costPrice !== ""
-      ) {
-
-        productData.costPrice =
-          parseFloat(
-            req.body.costPrice
-          );
-      }
-
-      // =====================================
-      // PRECIO VENTA
-      // =====================================
-
-      if (
-        req.body.unitPrice !== undefined &&
-        req.body.unitPrice !== ""
-      ) {
-
-        productData.unitPrice =
-          parseFloat(
-            req.body.unitPrice
-          );
-      }
-
-      // =====================================
-      // STOCK MÍNIMO
-      // =====================================
-
-      if (
-        req.body.minStock !== undefined &&
-        req.body.minStock !== ""
-      ) {
-
-        productData.minStock =
-          parseInt(
-            req.body.minStock,
-            10
-          );
-      }
-
-      // =====================================
-      // STOCK MÁXIMO
-      // =====================================
-
-      if (
-        req.body.maxStock !== undefined &&
-        req.body.maxStock !== ""
-      ) {
-
-        productData.maxStock =
-          parseInt(
-            req.body.maxStock,
-            10
-          );
-      }
-
-      // =====================================
-      // IMAGEN
-      // =====================================
-
-      /*
-       * SOLO actualizamos la imagen
-       * si se seleccionó una nueva.
-       */
-
-      if (imageUrl) {
-
-        productData.imageUrl =
-          imageUrl;
-      }
-
-      console.log("====================================");
-      console.log("DATOS PARA ACTUALIZAR");
-      console.log(productData);
-      console.log(
-        "DESCRIPCIÓN:",
-        productData.description
-      );
-      console.log(
-        "IMAGEN:",
-        productData.imageUrl
-      );
-      console.log("====================================");
-
-      const updatedProduct =
-        await ProductService.update(
-          id,
-          productData
+      const product =
+        await ProductService.createProduct(
+          data,
+          files
         );
 
-      console.log("====================================");
-      console.log("PRODUCTO ACTUALIZADO");
-      console.log("ID:", updatedProduct.id);
-      console.log(
-        "DESCRIPCIÓN:",
-        updatedProduct.description
-      );
-      console.log("====================================");
+      return res.status(201).json({
 
-      return res.json(
-        updatedProduct
-      );
-
-    } catch (error: any) {
-
-      console.error("====================================");
-      console.error("ERROR AL ACTUALIZAR PRODUCTO");
-      console.error(error);
-      console.error("STACK:", error?.stack);
-      console.error("====================================");
-
-      return res.status(400).json({
-        error: "Error al actualizar el producto",
-        details: error.message || String(error),
-      });
-    }
-  }
-
-  // ==========================================
-  // ELIMINAR / DESACTIVAR
-  // ==========================================
-
-  static async deleteProduct(req: Request, res: Response) {
-    try {
-
-      const id =
-        String(req.params.id);
-
-      await ProductService.delete(id);
-
-      return res.json({
         message:
-          "Producto desactivado correctamente",
+          "Producto creado correctamente",
+
+        product,
+
       });
 
     } catch (error: any) {
 
       console.error(
-        "Error al eliminar producto:",
+        "ERROR AL CREAR PRODUCTO:",
         error
       );
 
-      return res.status(500).json({
-        error: "Error al eliminar el producto",
-        details: error.message || String(error),
+      return res.status(400).json({
+
+        error:
+          "No se pudo crear el producto",
+
+        message:
+          error?.message,
+
+        details:
+          error?.meta ||
+          undefined,
+
       });
     }
-  }
-}
+  },
+
+  // ============================================================
+  // ACTUALIZAR PRODUCTO
+  // ============================================================
+
+  async updateProduct(
+    req: Request,
+    res: Response
+  ) {
+
+    try {
+
+      const id =
+        String(req.params.id);
+
+      if (
+        !id ||
+        id === "undefined" ||
+        id === "null"
+      ) {
+
+        return res.status(400).json({
+          error:
+            "El ID del producto es obligatorio",
+        });
+      }
+
+      const files =
+        Array.isArray(req.files)
+          ? req.files as Express.Multer.File[]
+          : [];
+
+      console.log(
+        "================================"
+      );
+
+      console.log(
+        "ACTUALIZAR PRODUCTO"
+      );
+
+      console.log(
+        "ID:",
+        id
+      );
+
+      console.log(
+        "BODY:",
+        req.body
+      );
+
+      console.log(
+        "ARCHIVOS:",
+        files.length
+      );
+
+      // --------------------------------------------------------
+      // DATOS
+      // --------------------------------------------------------
+
+      const data = {
+
+        sku:
+          req.body.sku,
+
+        name:
+          req.body.name,
+
+        description:
+          req.body.description,
+
+        categoryId:
+          req.body.categoryId,
+
+        supplierId:
+          req.body.supplierId,
+
+        costPrice:
+          req.body.costPrice,
+
+        unitPrice:
+          req.body.unitPrice,
+
+        minStock:
+          req.body.minStock,
+
+        maxStock:
+          req.body.maxStock,
+
+        // OFERTA
+        isOnSale:
+          req.body.isOnSale,
+
+        salePrice:
+          req.body.salePrice,
+
+      };
+
+      // --------------------------------------------------------
+      // ACTUALIZAR
+      // --------------------------------------------------------
+
+      const product =
+        await ProductService.updateProduct(
+          id,
+          data,
+          files
+        );
+
+      if (!product) {
+
+        return res.status(404).json({
+          error:
+            "Producto no encontrado",
+        });
+      }
+
+      return res.status(200).json({
+
+        message:
+          "Producto actualizado correctamente",
+
+        product,
+
+      });
+
+    } catch (error: any) {
+
+      console.error(
+        "ERROR AL ACTUALIZAR PRODUCTO:",
+        error
+      );
+
+      return res.status(400).json({
+
+        error:
+          "No se pudo actualizar el producto",
+
+        message:
+          error?.message,
+
+        details:
+          error?.meta ||
+          undefined,
+
+      });
+    }
+  },
+
+  // ============================================================
+  // ELIMINAR PRODUCTO
+  // ============================================================
+
+  async deleteProduct(
+    req: Request,
+    res: Response
+  ) {
+
+    try {
+
+      const id =
+        String(req.params.id);
+
+      if (
+        !id ||
+        id === "undefined" ||
+        id === "null"
+      ) {
+
+        return res.status(400).json({
+          error:
+            "El ID del producto es obligatorio",
+        });
+      }
+
+      console.log(
+        "ELIMINAR PRODUCTO ID:",
+        id
+      );
+
+      const product =
+        await ProductService.deleteProduct(
+          id
+        );
+
+      if (!product) {
+
+        return res.status(404).json({
+          error:
+            "Producto no encontrado",
+        });
+      }
+
+      return res.status(200).json({
+
+        message:
+          "Producto eliminado correctamente",
+
+        product,
+
+      });
+
+    } catch (error: any) {
+
+      console.error(
+        "ERROR AL ELIMINAR PRODUCTO:",
+        error
+      );
+
+      return res.status(400).json({
+
+        error:
+          "No se pudo eliminar el producto",
+
+        message:
+          error?.message,
+
+        details:
+          error?.meta ||
+          undefined,
+
+      });
+    }
+  },
+};
+
+export default ProductController;

@@ -6,6 +6,7 @@ export class TiendaProductService {
       where: {
         isActive: true,
       },
+
       include: {
         stocks: true,
 
@@ -24,16 +25,37 @@ export class TiendaProductService {
     return products.map((product: any) => {
       const totalStock = product.stocks
         ? product.stocks.reduce(
-            (acc: number, curr: any) => acc + Number(curr.quantity || 0),
+            (acc: number, curr: any) =>
+              acc + Number(curr.quantity || 0),
             0
           )
         : 0;
 
       const unitPrice = Number(product.unitPrice || 0);
+
       const costPrice = Number(product.costPrice || 0);
+
+      const isOnSale = product.isOnSale === true;
+
+      const salePrice =
+        isOnSale && product.salePrice != null
+          ? Number(product.salePrice)
+          : null;
+
+      const discountPercentage =
+        isOnSale &&
+        salePrice != null &&
+        unitPrice > 0
+          ? Math.round(
+              ((unitPrice - salePrice) /
+                unitPrice) *
+                100
+            )
+          : 0;
 
       return {
         id: product.id,
+
         sku: product.sku,
 
         name: product.name,
@@ -42,25 +64,33 @@ export class TiendaProductService {
 
         // PRECIOS
         unitPrice: unitPrice,
+
         costPrice: costPrice,
 
-        // IMAGEN DE CLOUDINARY
+        // OFERTA
+        isOnSale: isOnSale,
+
+        salePrice: salePrice,
+
+        // COMPATIBILIDAD
+        isOffer: isOnSale,
+
+        originalPrice: unitPrice,
+
+        discountPercentage: discountPercentage,
+
+        // IMAGEN
         imageUrl: product.imageUrl || null,
 
         // CATEGORIA
-        category: product.category?.name || "General",
+        category:
+          product.category?.name || "General",
 
         // STOCK
         stock: totalStock,
 
-        // DATOS PARA LA TIENDA
+        // DISPONIBILIDAD
         available: totalStock > 0,
-
-        // Por ahora calculamos si tiene margen.
-        // Después podemos crear un campo específico para ofertas.
-        isOffer: false,
-        originalPrice: unitPrice,
-        discountPercentage: 0,
       };
     });
   }

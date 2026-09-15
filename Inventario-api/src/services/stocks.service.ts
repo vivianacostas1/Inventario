@@ -6,8 +6,16 @@ export class StockService {
   static async getAllStock() {
     return await prisma.stock.findMany({
       include: {
-        product: true,
         warehouse: true,
+        product: {
+          include: {
+            shareholderProducts: {
+              include: {
+                shareholder: true // <-- Esto trae los datos y nombres de los accionistas
+              }
+            }
+          }
+        },
       },
     });
   }
@@ -30,8 +38,16 @@ export class StockService {
         quantity: data.quantity,
       },
       include: {
-        product: true,
         warehouse: true,
+        product: {
+          include: {
+            shareholderProducts: {
+              include: {
+                shareholder: true
+              }
+            }
+          }
+        },
       },
     });
   }
