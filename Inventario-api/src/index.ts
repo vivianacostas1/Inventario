@@ -28,6 +28,7 @@ import saleItemRoutes from './routes/sale-items';
 import productAnalyticsRoutes from './routes/product-analytics';
 import authRoutes from './routes/auth.routes';
 import tiendaProductRoutes from './routes/tienda-product.routes';
+import deliveryZoneRoutes from './routes/delivery-zones';
 import imageRoutes from './controllers/imageController';
 
 // Crear aplicación
@@ -117,6 +118,7 @@ app.use('/api/product-analytics', productAnalyticsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/tienda-products', tiendaProductRoutes); 
+app.use('/api/delivery-zones', deliveryZoneRoutes);
 app.use('/api', imageRoutes);
 
 // Ruta principal

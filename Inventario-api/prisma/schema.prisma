@@ -329,6 +329,35 @@ model ProductAnalytics {
   @@map("analisis_productos")
 }
 
+model DeliveryZone {
+  id          String  @id @default(uuid())
+  name        String  @map("nombre")
+  description String? @map("descripcion")
+
+  // Precio del delivery en bolivianos
+  price Decimal @map("precio") @db.Decimal(10, 2)
+
+  // Permite activar o desactivar la zona
+  isActive Boolean @default(true) @map("esta_activa")
+
+  // Determina cuál zona tiene prioridad si hay coincidencias
+  priority Int @default(0) @map("prioridad")
+
+  // POLYGON = área del mapa
+  // POINT   = ubicación puntual
+  zoneType String @default("POLYGON") @map("tipo_zona")
+
+  // Coordenadas del área o punto
+  coordinates Json? @map("coordenadas")
+
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @updatedAt @map("actualizado_en")
+
+  @@index([isActive])
+  @@index([priority])
+  @@map("zonas_entrega")
+}
+
 enum Role {
   ADMIN
   MANAGER

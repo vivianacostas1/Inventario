@@ -25,6 +25,7 @@ import { WarehousesPage } from './pages/WarehousesPage';
 import { SalesProfitView } from './components/SalesProfitView';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ReportsPage } from './pages/ReportsPage';
+import DeliveryZonesPage from './pages/DeliveryZonesPage';
 
 import type { ReactNode } from 'react';
 
@@ -91,6 +92,7 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
         <div>
 
           {/* CABECERA */}
+
           <div className="p-4 border-b border-gray-800 flex items-center justify-between">
             {isSidebarExpanded && (
               <span className="font-bold text-xl text-indigo-400 truncate">
@@ -120,6 +122,7 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
           <nav className="p-3 space-y-4 text-sm overflow-y-auto max-h-[calc(100vh-140px)]">
 
             {/* DASHBOARD */}
+
             <div>
               <Link
                 to="/"
@@ -414,6 +417,19 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
 
                       </div>
 
+                      {/* TARIFAS DE ENTREGA */}
+
+                      <Link
+                        to="/delivery-zones"
+                        className={`block px-3 py-1.5 rounded-md transition ${
+                          isActive('/delivery-zones')
+                            ? 'bg-indigo-600 text-white'
+                            : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                        }`}
+                      >
+                        🚚 Tarifas de entrega
+                      </Link>
+
                       {/* USUARIOS */}
 
                       <Link
@@ -563,12 +579,14 @@ export function App() {
         <Routes>
 
           {/* LOGIN */}
+
           <Route
             path="/login"
             element={<LoginPage />}
           />
 
           {/* DASHBOARD */}
+
           <Route
             path="/"
             element={
@@ -581,6 +599,7 @@ export function App() {
           />
 
           {/* PRODUCTOS */}
+
           <Route
             path="/products"
             element={
@@ -593,6 +612,7 @@ export function App() {
           />
 
           {/* CATEGORÍAS */}
+
           <Route
             path="/categories"
             element={
@@ -605,6 +625,7 @@ export function App() {
           />
 
           {/* PROVEEDORES */}
+
           <Route
             path="/suppliers"
             element={
@@ -617,6 +638,7 @@ export function App() {
           />
 
           {/* ACCIONISTAS */}
+
           <Route
             path="/shareholders"
             element={
@@ -629,6 +651,7 @@ export function App() {
           />
 
           {/* CLIENTES */}
+
           <Route
             path="/clients"
             element={
@@ -641,6 +664,7 @@ export function App() {
           />
 
           {/* VENTAS */}
+
           <Route
             path="/sales"
             element={
@@ -653,6 +677,7 @@ export function App() {
           />
 
           {/* REPORTES */}
+
           <Route
             path="/reports"
             element={
@@ -665,6 +690,7 @@ export function App() {
           />
 
           {/* GANANCIAS */}
+
           <Route
             path="/sales-profit"
             element={
@@ -677,6 +703,7 @@ export function App() {
           />
 
           {/* ANALYTICS */}
+
           <Route
             path="/analytics"
             element={
@@ -689,6 +716,7 @@ export function App() {
           />
 
           {/* COMPRAS */}
+
           <Route
             path="/purchases"
             element={
@@ -701,6 +729,7 @@ export function App() {
           />
 
           {/* ALMACENES */}
+
           <Route
             path="/warehouses"
             element={
@@ -713,6 +742,7 @@ export function App() {
           />
 
           {/* STOCK */}
+
           <Route
             path="/stocks"
             element={
@@ -725,6 +755,7 @@ export function App() {
           />
 
           {/* MOVIMIENTOS */}
+
           <Route
             path="/stock-movements"
             element={
@@ -737,6 +768,7 @@ export function App() {
           />
 
           {/* USUARIOS */}
+
           <Route
             path="/users"
             element={
@@ -748,7 +780,23 @@ export function App() {
             }
           />
 
+          {/* =================================================
+              TARIFAS DE ENTREGA
+          ================================================= */}
+
+          <Route
+            path="/delivery-zones"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <DeliveryZonesPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
           {/* RUTA NO ENCONTRADA */}
+
           <Route
             path="*"
             element={<Navigate to="/" replace />}
