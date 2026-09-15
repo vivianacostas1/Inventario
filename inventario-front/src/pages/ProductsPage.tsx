@@ -1,70 +1,175 @@
-import { useState, useEffect } from 'react';
-import api from '../api/axios';
+import { useEffect, useState } from "react";
+import api from "../api/axios";
 
-export function ProductsPage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+interface ProductImage {
+  id: string;
+  productId: string;
+  url: string;
+}
 
-  // Estados para el modal de Crear/Editar Producto
+interface Product {
+  id: string;
+  sku?: string;
+  name?: string;
+  description?: string;
+
+  categoryId?: string;
+  supplierId?: string;
+
+  costPrice?: number;
+  unitPrice?: number;
+
+  // Oferta
+  isOnSale?: boolean;
+  salePrice?: number;
+  esta_en_oferta?: boolean;
+  precio_oferta?: number;
+
+  minStock?: number;
+  maxStock?: number;
+
+  precio_costo?: number;
+  precio_unitario?: number;
+  stock_minimo?: number;
+  stock_maximo?: number;
+
+  imageUrl?: string;
+  imagen?: string;
+
+  images?: ProductImage[];
+
+  category?: {
+    id?: string;
+    name?: string;
+  };
+
+  shareholders?: any[];
+  shareholderProducts?: any[];
+  accionistas_productos?: any[];
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Supplier {
+  id: string;
+  name: string;
+}
+
+function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  // ============================================================
+  // MODAL
+  // ============================================================
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
-  // Imagen
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [editingProductId, setEditingProductId] =
+    useState<string | null>(null);
 
-  // Datos del producto
-  const [newProduct, setNewProduct] = useState({
-    sku: '',
-    name: '',
-    description: '',
-    categoryId: '',
-    supplierId: '',
+  // ============================================================
+  // IMÁGENES
+  // ============================================================
+
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  // ============================================================
+  // BUSCADOR
+  // ============================================================
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // ============================================================
+  // PAGINACIÓN
+  // ============================================================
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // ============================================================
+  // PRODUCTO
+  // ============================================================
+
+  const emptyProduct = {
+    sku: "",
+    name: "",
+    categoryId: "",
+    supplierId: "",
     costPrice: 0,
     unitPrice: 0,
+    isOnSale: false,
+    salePrice: 0,
     minStock: 0,
-    maxStock: 0
-  });
+    maxStock: 0,
+  };
 
-  // ==========================================
+  const [newProduct, setNewProduct] = useState(emptyProduct);
+
+  // ============================================================
   // CARGAR DATOS
-  // ==========================================
+  // ============================================================
 
   const fetchData = async () => {
     try {
-      const [prodRes, catRes, supRes] = await Promise.allSettled([
-        api.get('/products'),
-        api.get('/categories'),
-        api.get('/suppliers')
-      ]);
+      setLoading(true);
 
-      if (prodRes.status === 'fulfilled') {
-        setProducts(
-          Array.isArray(prodRes.value.data)
-            ? prodRes.value.data
-            : prodRes.value.data?.data || []
-        );
+      const [prodRes, catRes, supRes] =
+        await Promise.allSettled([
+          api.get("/products"),
+          api.get("/categories"),
+          api.get("/suppliers"),
+        ]);
+
+      if (prodRes.status === "fulfilled") {
+        const data = prodRes.value.data;
+
+        const productsData = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        setProducts(productsData);
       }
 
-      if (catRes.status === 'fulfilled') {
-        setCategories(
-          Array.isArray(catRes.value.data)
-            ? catRes.value.data
-            : catRes.value.data?.data || []
-        );
+      if (catRes.status === "fulfilled") {
+        const data = catRes.value.data;
+
+        const categoriesData = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        setCategories(categoriesData);
       }
 
-      if (supRes.status === 'fulfilled') {
-        setSuppliers(
-          Array.isArray(supRes.value.data)
-            ? supRes.value.data
-            : supRes.value.data?.data || []
-        );
-      }
+      if (supRes.status === "fulfilled") {
+        const data = supRes.value.data;
 
+        const suppliersData = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        setSuppliers(suppliersData);
+      }
     } catch (error) {
-      console.error("Error al cargar datos", error);
+      console.error(
+        "Error al cargar datos:",
+        error
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,86 +177,107 @@ export function ProductsPage() {
     fetchData();
   }, []);
 
-  // ==========================================
+  // ============================================================
+  // LIMPIAR PREVIEWS
+  // ============================================================
+
+  const revokeBlobPreviews = () => {
+    imagePreviews.forEach((preview) => {
+      if (preview.startsWith("blob:")) {
+        URL.revokeObjectURL(preview);
+      }
+    });
+  };
+
+  // ============================================================
   // ABRIR MODAL CREAR
-  // ==========================================
+  // ============================================================
 
   const handleOpenCreateModal = async () => {
     setEditingProductId(null);
-    setImageFile(null);
-    setImagePreview(null);
+
+    revokeBlobPreviews();
+
+    setImageFiles([]);
+    setImagePreviews([]);
 
     try {
-      const res = await api.get('/products/next-sku');
-
-      setNewProduct({
-        sku: res.data.sku || '',
-        name: '',
-        description: '',
-        categoryId: '',
-        supplierId: '',
-        costPrice: 0,
-        unitPrice: 0,
-        minStock: 0,
-        maxStock: 0
-      });
-
-    } catch (error) {
-
-      console.error(
-        "Error al obtener el SKU sugerido",
-        error
+      const res = await api.get(
+        "/products/next-sku"
       );
 
       setNewProduct({
-        sku: '',
-        name: '',
-        description: '',
-        categoryId: '',
-        supplierId: '',
-        costPrice: 0,
-        unitPrice: 0,
-        minStock: 0,
-        maxStock: 0
+        ...emptyProduct,
+        sku: res.data?.sku || "",
       });
+    } catch (error) {
+      console.error(
+        "Error al obtener el SKU sugerido:",
+        error
+      );
+
+      setNewProduct(emptyProduct);
     }
 
     setIsCreateModalOpen(true);
   };
 
-  // ==========================================
+  // ============================================================
+  // OBTENER IMÁGENES DEL PRODUCTO
+  // ============================================================
+
+  const getProductImages = (
+    prod: Product
+  ): string[] => {
+    const images: string[] = [];
+
+    if (prod.imageUrl) {
+      images.push(prod.imageUrl);
+    } else if (prod.imagen) {
+      images.push(prod.imagen);
+    }
+
+    if (Array.isArray(prod.images)) {
+      prod.images.forEach((image) => {
+        if (
+          image?.url &&
+          !images.includes(image.url)
+        ) {
+          images.push(image.url);
+        }
+      });
+    }
+
+    return images;
+  };
+
+  // ============================================================
   // ABRIR MODAL EDITAR
-  // ==========================================
+  // ============================================================
 
-  const handleOpenEditModal = (prod: any) => {
-
+  const handleOpenEditModal = (
+    prod: Product
+  ) => {
     setEditingProductId(prod.id);
 
-    setImageFile(null);
+    revokeBlobPreviews();
 
-    setImagePreview(
-      prod.imageUrl ||
-      prod.imagen ||
-      null
-    );
+    setImageFiles([]);
+
+    const existingImages =
+      getProductImages(prod);
+
+    setImagePreviews(existingImages);
 
     setNewProduct({
-      sku: prod.sku || '',
-
-      name: prod.name || '',
-
-      description:
-        prod.description ||
-        prod.descripcion ||
-        '',
+      sku: prod.sku || "",
+      name: prod.name || "",
 
       categoryId:
-        prod.categoryId ||
-        '',
+        prod.categoryId || "",
 
       supplierId:
-        prod.supplierId ||
-        '',
+        prod.supplierId || "",
 
       costPrice:
         prod.costPrice ??
@@ -171,105 +297,319 @@ export function ProductsPage() {
       maxStock:
         prod.maxStock ??
         prod.stock_maximo ??
-        0
+        0,
+
+      isOnSale:
+        prod.isOnSale ??
+        prod.esta_en_oferta ??
+        false,
+
+      salePrice:
+        prod.salePrice ??
+        prod.precio_oferta ??
+        0,
     });
 
     setIsCreateModalOpen(true);
   };
 
-  // ==========================================
-  // ELIMINAR PRODUCTO
-  // ==========================================
+  // ============================================================
+  // CERRAR MODAL
+  // ============================================================
 
-  const handleDeleteProduct = async (
-    id: string,
-    name: string
-  ) => {
+  const handleCloseModal = () => {
+    revokeBlobPreviews();
 
-    if (
-      window.confirm(
-        `¿Estás seguro de que deseas eliminar (desactivar) el producto "${name}"?`
-      )
-    ) {
+    setIsCreateModalOpen(false);
 
-      try {
+    setEditingProductId(null);
 
-        await api.delete(
-          `/products/${id}`
-        );
+    setImageFiles([]);
+    setImagePreviews([]);
 
-        alert(
-          '¡Producto eliminado correctamente!'
-        );
-
-        fetchData();
-
-      } catch (error: any) {
-
-        console.error(
-          "Error al eliminar el producto",
-          error
-        );
-
-        alert(
-          error.response?.data?.error ||
-          'No se pudo eliminar el producto'
-        );
-      }
-    }
+    setNewProduct(emptyProduct);
   };
 
-  // ==========================================
-  // SELECCIONAR IMAGEN
-  // ==========================================
+  // ============================================================
+  // CAMBIO DE IMÁGENES
+  // ============================================================
 
   const handleImageChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    const files = Array.from(
+      e.target.files || []
+    );
 
-    if (
-      e.target.files &&
-      e.target.files[0]
-    ) {
+    if (files.length === 0) {
+      return;
+    }
 
-      const file =
-        e.target.files[0];
+    console.log(
+      "📸 ARCHIVOS SELECCIONADOS:",
+      files.length
+    );
 
-      setImageFile(file);
+    console.log(
+      "📸 NOMBRES SELECCIONADOS:",
+      files.map(
+        (file) => file.name
+      )
+    );
 
-      setImagePreview(
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        alert(
+          `El archivo "${file.name}" no es una imagen válida.`
+        );
+
+        continue;
+      }
+
+      if (
+        file.size >
+        5 * 1024 * 1024
+      ) {
+        alert(
+          `La imagen "${file.name}" supera los 5 MB.`
+        );
+
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) {
+      e.target.value = "";
+      return;
+    }
+
+    setImageFiles((prev) => {
+      const updatedFiles = [
+        ...prev,
+        ...validFiles,
+      ];
+
+      console.log(
+        "📦 TOTAL imageFiles:",
+        updatedFiles.length
+      );
+
+      console.log(
+        "📦 ARCHIVOS imageFiles:",
+        updatedFiles.map(
+          (file) => file.name
+        )
+      );
+
+      return updatedFiles;
+    });
+
+    const newPreviewUrls =
+      validFiles.map((file) =>
         URL.createObjectURL(file)
       );
-    }
+
+    setImagePreviews((prev) => {
+      const totalImages =
+        prev.length +
+        validFiles.length;
+
+      if (totalImages > 10) {
+        alert(
+          "Puedes tener un máximo de 10 imágenes."
+        );
+
+        newPreviewUrls.forEach(
+          (url) => {
+            URL.revokeObjectURL(url);
+          }
+        );
+
+        return prev;
+      }
+
+      return [
+        ...prev,
+        ...newPreviewUrls,
+      ];
+    });
+
+    /*
+     * Limpiamos el input para permitir
+     * volver a seleccionar archivos.
+     *
+     * Los archivos ya están guardados
+     * en imageFiles.
+     */
+    e.target.value = "";
   };
 
-  // ==========================================
+  // ============================================================
+  // ELIMINAR IMAGEN
+  // ============================================================
+
+  const handleRemoveImage = (
+    index: number
+  ) => {
+    const preview =
+      imagePreviews[index];
+
+    if (
+      preview?.startsWith("blob:")
+    ) {
+      URL.revokeObjectURL(preview);
+    }
+
+    /*
+     * Los archivos nuevos son exactamente
+     * los previews blob.
+     *
+     * Buscamos la posición del blob
+     * correspondiente dentro de imageFiles.
+     */
+
+    const blobIndexes: number[] = [];
+
+    imagePreviews.forEach(
+      (item, i) => {
+        if (
+          item.startsWith("blob:")
+        ) {
+          blobIndexes.push(i);
+        }
+      }
+    );
+
+    const blobPosition =
+      blobIndexes.indexOf(index);
+
+    if (blobPosition !== -1) {
+      setImageFiles((prev) =>
+        prev.filter(
+          (_, i) =>
+            i !== blobPosition
+        )
+      );
+    }
+
+    setImagePreviews((prev) =>
+      prev.filter(
+        (_, i) => i !== index
+      )
+    );
+  };
+
+  // ============================================================
   // GUARDAR PRODUCTO
-  // ==========================================
+  // ============================================================
 
   const handleSaveProduct = async (
     e: React.FormEvent
   ) => {
-
     e.preventDefault();
 
     try {
+      if (!newProduct.name.trim()) {
+        alert(
+          "El nombre del producto es obligatorio."
+        );
+        return;
+      }
+
+      if (!newProduct.categoryId) {
+        alert(
+          "Debes seleccionar una categoría."
+        );
+        return;
+      }
+
+      if (!newProduct.supplierId) {
+        alert(
+          "Debes seleccionar un proveedor."
+        );
+        return;
+      }
+
+      if (newProduct.costPrice < 0) {
+        alert(
+          "El precio de compra no puede ser negativo."
+        );
+        return;
+      }
+
+      if (newProduct.unitPrice < 0) {
+        alert(
+          "El precio de venta no puede ser negativo."
+        );
+        return;
+      }
+
+      if (newProduct.minStock < 0) {
+        alert(
+          "El stock mínimo no puede ser negativo."
+        );
+        return;
+      }
+
+      if (newProduct.maxStock < 0) {
+        alert(
+          "El stock máximo no puede ser negativo."
+        );
+        return;
+      }
+
+      if (
+        newProduct.maxStock > 0 &&
+        newProduct.maxStock <
+          newProduct.minStock
+      ) {
+        alert(
+          "El stock máximo no puede ser menor que el stock mínimo."
+        );
+        return;
+      }
+
+      // ========================================================
+      // VALIDAR OFERTA
+      // ========================================================
+
+      if (newProduct.isOnSale) {
+        if (
+          !newProduct.salePrice ||
+          newProduct.salePrice <= 0
+        ) {
+          alert(
+            "El precio de oferta debe ser mayor a 0."
+          );
+          return;
+        }
+
+        if (
+          newProduct.salePrice >=
+          newProduct.unitPrice
+        ) {
+          alert(
+            "El precio de oferta debe ser menor que el precio normal."
+          );
+          return;
+        }
+      }
 
       const formData =
         new FormData();
 
-      // ======================================
-      // DATOS DEL PRODUCTO
-      // ======================================
-
       formData.append(
-        "name",
-        newProduct.name
+        "sku",
+        newProduct.sku
       );
 
       formData.append(
-        "description",
-        newProduct.description
+        "name",
+        newProduct.name.trim()
       );
 
       formData.append(
@@ -310,70 +650,114 @@ export function ProductsPage() {
         )
       );
 
-      // ======================================
-      // IMAGEN
-      // ======================================
+      // ========================================================
+      // OFERTA
+      // ========================================================
 
-      if (imageFile) {
-
-        console.log(
-          "IMAGEN QUE SE ENVÍA:",
-          imageFile.name
-        );
-
-        console.log(
-          "TIPO:",
-          imageFile.type
-        );
-
-        console.log(
-          "TAMAÑO:",
-          imageFile.size
-        );
-
-        formData.append(
-          "imagen",
-          imageFile
-        );
-
-      } else {
-
-        console.log(
-          "NO SE SELECCIONÓ IMAGEN"
-        );
-      }
-
-      // ======================================
-      // DEBUG FORMDATA
-      // ======================================
-
-      console.log(
-        "========== FORMDATA =========="
+      formData.append(
+        "isOnSale",
+        String(
+          newProduct.isOnSale
+        )
       );
 
-      for (
-        const [
-          key,
-          value
-        ] of formData.entries()
-      ) {
+      formData.append(
+        "salePrice",
+        newProduct.isOnSale
+          ? String(
+              newProduct.salePrice ??
+                ""
+            )
+          : ""
+      );
 
-        console.log(
-          key,
-          value
-        );
+      // ========================================================
+      // IMÁGENES
+      // ========================================================
+
+      console.log(
+        "========================================"
+      );
+
+      console.log(
+        "📤 PREPARANDO IMÁGENES"
+      );
+
+      console.log(
+        "📤 TOTAL imageFiles:",
+        imageFiles.length
+      );
+
+      console.log(
+        "📤 NOMBRES:",
+        imageFiles.map(
+          (file) => file.name
+        )
+      );
+
+      imageFiles.forEach(
+        (file, index) => {
+          console.log(
+            `📤 ENVIANDO IMAGEN ${
+              index + 1
+            }:`,
+            file.name
+          );
+
+          formData.append(
+            "imagenes",
+            file
+          );
+        }
+      );
+
+      console.log(
+        "========================================"
+      );
+
+      // ========================================================
+      // DEBUG FORM DATA
+      // ========================================================
+
+      console.log(
+        "========== DATOS DEL PRODUCTO =========="
+      );
+
+      for (const [
+        key,
+        value,
+      ] of formData.entries()) {
+        if (
+          value instanceof File
+        ) {
+          console.log(
+            key,
+            {
+              nombre:
+                value.name,
+              tipo:
+                value.type,
+              tamaño:
+                value.size,
+            }
+          );
+        } else {
+          console.log(
+            key,
+            value
+          );
+        }
       }
 
       console.log(
-        "=============================="
+        "========================================"
       );
 
-      // ======================================
-      // CREAR
-      // ======================================
+      // ========================================================
+      // CREAR PRODUCTO
+      // ========================================================
 
       if (!editingProductId) {
-
         const response =
           await api.post(
             "/products",
@@ -388,13 +772,13 @@ export function ProductsPage() {
         alert(
           "¡Producto creado con éxito!"
         );
+      }
 
-      } else {
+      // ========================================================
+      // ACTUALIZAR PRODUCTO
+      // ========================================================
 
-        // ====================================
-        // ACTUALIZAR
-        // ====================================
-
+      else {
         const response =
           await api.put(
             `/products/${editingProductId}`,
@@ -411,34 +795,12 @@ export function ProductsPage() {
         );
       }
 
-      // ======================================
-      // LIMPIAR FORMULARIO
-      // ======================================
+      handleCloseModal();
 
-      setIsCreateModalOpen(false);
-
-      setEditingProductId(null);
-
-      setImageFile(null);
-
-      setImagePreview(null);
-
-      setNewProduct({
-        sku: "",
-        name: "",
-        description: "",
-        categoryId: "",
-        supplierId: "",
-        costPrice: 0,
-        unitPrice: 0,
-        minStock: 0,
-        maxStock: 0,
-      });
+      setCurrentPage(1);
 
       await fetchData();
-
     } catch (error: any) {
-
       console.error(
         "===================================="
       );
@@ -447,11 +809,10 @@ export function ProductsPage() {
         "ERROR AL GUARDAR PRODUCTO"
       );
 
-      console.error(
-        error
-      );
+      console.error(error);
 
       console.error(
+        "RESPUESTA:",
         error?.response?.data
       );
 
@@ -460,37 +821,252 @@ export function ProductsPage() {
       );
 
       alert(
-        error?.response?.data?.details ||
-        error?.response?.data?.error ||
-        "No se pudo guardar el producto"
+        error?.response?.data
+          ?.details ||
+          error?.response?.data
+            ?.error ||
+          error?.response?.data
+            ?.message ||
+          "No se pudo guardar el producto"
       );
     }
   };
 
-  // ==========================================
+  // ============================================================
+  // ELIMINAR PRODUCTO
+  // ============================================================
+
+  const handleDeleteProduct = async (
+    id: string,
+    name: string
+  ) => {
+    const confirmed =
+      window.confirm(
+        `¿Estás seguro de que deseas eliminar (desactivar) el producto "${name}"?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await api.delete(
+        `/products/${id}`
+      );
+
+      alert(
+        "¡Producto eliminado correctamente!"
+      );
+
+      await fetchData();
+
+      const filteredLength =
+        Math.max(
+          0,
+          products.length - 1
+        );
+
+      const newTotalPages =
+        Math.max(
+          1,
+          Math.ceil(
+            filteredLength /
+              itemsPerPage
+          )
+        );
+
+      if (
+        currentPage >
+        newTotalPages
+      ) {
+        setCurrentPage(
+          newTotalPages
+        );
+      }
+    } catch (error: any) {
+      console.error(
+        "Error al eliminar el producto:",
+        error
+      );
+
+      alert(
+        error?.response?.data
+          ?.error ||
+          error?.response?.data
+            ?.message ||
+          "No se pudo eliminar el producto"
+      );
+    }
+  };
+
+  // ============================================================
+  // FILTRAR
+  // ============================================================
+
+  const filteredProducts =
+    products.filter((prod) => {
+      const search =
+        searchTerm
+          .toLowerCase()
+          .trim();
+
+      if (!search) {
+        return true;
+      }
+
+      const sku =
+        (
+          prod.sku || ""
+        ).toLowerCase();
+
+      const name =
+        (
+          prod.name || ""
+        ).toLowerCase();
+
+      const category =
+        (
+          prod.category
+            ?.name || ""
+        ).toLowerCase();
+
+      return (
+        sku.includes(search) ||
+        name.includes(search) ||
+        category.includes(search)
+      );
+    });
+
+  // ============================================================
+  // PAGINACIÓN
+  // ============================================================
+
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        filteredProducts.length /
+          itemsPerPage
+      )
+    );
+
+  const startIndex =
+    (currentPage - 1) *
+    itemsPerPage;
+
+  const endIndex =
+    startIndex +
+    itemsPerPage;
+
+  const paginatedProducts =
+    filteredProducts.slice(
+      startIndex,
+      endIndex
+    );
+
+  // ============================================================
+  // CAMBIAR PÁGINA
+  // ============================================================
+
+  const goToPage = (
+    page: number
+  ) => {
+    if (
+      page < 1 ||
+      page > totalPages
+    ) {
+      return;
+    }
+
+    setCurrentPage(page);
+  };
+
+  // ============================================================
+  // REINICIAR PAGINACIÓN
+  // ============================================================
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    itemsPerPage,
+  ]);
+
+  // ============================================================
+  // NÚMEROS DE PÁGINA
+  // ============================================================
+
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+
+    if (totalPages <= 7) {
+      for (
+        let i = 1;
+        i <= totalPages;
+        i++
+      ) {
+        pages.push(i);
+      }
+
+      return pages;
+    }
+
+    pages.push(1);
+
+    if (currentPage > 3) {
+      pages.push(-1);
+    }
+
+    const start = Math.max(
+      2,
+      currentPage - 1
+    );
+
+    const end = Math.min(
+      totalPages - 1,
+      currentPage + 1
+    );
+
+    for (
+      let i = start;
+      i <= end;
+      i++
+    ) {
+      pages.push(i);
+    }
+
+    if (
+      currentPage <
+      totalPages - 2
+    ) {
+      pages.push(-1);
+    }
+
+    pages.push(totalPages);
+
+    return pages;
+  };
+
+  // ============================================================
   // RENDER
-  // ==========================================
+  // ============================================================
 
   return (
     <div className="p-8 max-w-7xl mx-auto text-white">
 
-      {/* ======================================
-          CABECERA
-      ======================================= */}
+      {/* CABECERA */}
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
 
         <div>
-
           <h1 className="text-3xl font-bold mb-2">
             Gestión de Productos
           </h1>
 
           <p className="text-gray-400">
-            Control de inventario, SKU, precios,
-            categorías y descripciones.
+            Control de inventario, SKU,
+            precios y categorías.
           </p>
-
         </div>
 
         <button
@@ -501,19 +1077,48 @@ export function ProductsPage() {
         >
           + Nuevo Producto
         </button>
-
       </div>
 
-      {/* ======================================
-          TABLA DE PRODUCTOS
-      ======================================= */}
+      {/* BUSCADOR */}
 
-      <div className="bg-gray-800 rounded-lg shadow-md overflow-x-auto">
+      <div className="mb-6 flex flex-col md:flex-row gap-3 justify-between">
+
+        <input
+          type="text"
+          placeholder="Buscar por SKU, nombre o categoría..."
+          value={searchTerm}
+          onChange={(e) =>
+            setSearchTerm(
+              e.target.value
+            )
+          }
+          className="w-full md:w-96 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition"
+        />
+
+        <div className="text-sm text-gray-400 flex items-center">
+          {
+            filteredProducts.length
+          }{" "}
+          producto
+          {filteredProducts.length !==
+          1
+            ? "s"
+            : ""}{" "}
+          encontrado
+          {filteredProducts.length !==
+          1
+            ? "s"
+            : ""}
+        </div>
+      </div>
+
+      {/* TABLA */}
+
+      <div className="bg-gray-800 rounded-xl shadow-md overflow-x-auto border border-gray-700">
 
         <table className="w-full text-left border-collapse">
 
           <thead>
-
             <tr className="border-b border-gray-700 text-gray-400 text-sm">
 
               <th className="p-4">
@@ -526,10 +1131,6 @@ export function ProductsPage() {
 
               <th className="p-4">
                 NOMBRE
-              </th>
-
-              <th className="p-4">
-                DESCRIPCIÓN
               </th>
 
               <th className="p-4">
@@ -553,233 +1154,273 @@ export function ProductsPage() {
               </th>
 
             </tr>
-
           </thead>
 
           <tbody>
 
-            {products.map(
-              (prod: any) => {
+            {loading ? (
 
-                const list =
-                  prod.shareholders ||
-                  prod.shareholderProducts ||
-                  prod.accionistas_productos ||
-                  [];
+              <tr>
+                <td
+                  colSpan={8}
+                  className="p-8 text-center text-gray-400"
+                >
+                  Cargando productos...
+                </td>
+              </tr>
 
-                const totalAssigned =
-                  list.reduce(
-                    (
-                      acc: number,
-                      sp: any
-                    ) =>
-                      acc +
+            ) : paginatedProducts.length >
+              0 ? (
+
+              paginatedProducts.map(
+                (prod) => {
+
+                  const list =
+                    prod.shareholders ||
+                    prod.shareholderProducts ||
+                    prod.accionistas_productos ||
+                    [];
+
+                  const totalAssigned =
+                    list.reduce(
                       (
-                        sp.quantity ||
-                        sp.cantidad ||
-                        0
-                      ),
-                    0
-                  );
+                        acc: number,
+                        sp: any
+                      ) =>
+                        acc +
+                        Number(
+                          sp.quantity ??
+                            sp.cantidad ??
+                            0
+                        ),
+                      0
+                    );
 
-                const productImg =
-                  prod.imageUrl ||
-                  prod.imagen;
+                  const productImages =
+                    getProductImages(
+                      prod
+                    );
 
-                const description =
-                  prod.description ||
-                  prod.descripcion ||
-                  '';
+                  const productImg =
+                    productImages[0];
 
-                return (
+                  return (
+                    <tr
+                      key={
+                        prod.id
+                      }
+                      className="border-b border-gray-700 hover:bg-gray-700/50 transition"
+                    >
 
-                  <tr
-                    key={prod.id}
-                    className="border-b border-gray-700 hover:bg-gray-700/50"
-                  >
+                      {/* IMAGEN */}
 
-                    {/* IMAGEN */}
+                      <td className="p-4">
 
-                    <td className="p-4">
+                        {productImg ? (
 
-                      {productImg ? (
+                          <img
+                            src={
+                              productImg
+                            }
+                            alt={
+                              prod.name ||
+                              "Producto"
+                            }
+                            className="w-12 h-12 object-cover rounded-lg border border-gray-600"
+                          />
 
-                        <img
-                          src={productImg}
-                          alt={prod.name}
-                          className="w-10 h-10 object-cover rounded"
-                        />
+                        ) : (
 
-                      ) : (
+                          <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center text-xs text-gray-400">
+                            Sin img
+                          </div>
 
-                        <div className="w-10 h-10 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-400">
-                          Sin img
-                        </div>
+                        )}
 
-                      )}
+                      </td>
 
-                    </td>
+                      {/* SKU */}
 
-                    {/* SKU */}
+                      <td className="p-4 text-indigo-300 font-medium">
+                        {prod.sku ||
+                          "N/A"}
+                      </td>
 
-                    <td className="p-4 text-indigo-300 font-medium">
-                      {prod.sku}
-                    </td>
+                      {/* NOMBRE */}
 
-                    {/* NOMBRE */}
+                      <td className="p-4 font-medium">
+                        {prod.name ||
+                          "Sin nombre"}
+                      </td>
 
-                    <td className="p-4">
-                      {prod.name}
-                    </td>
+                      {/* CATEGORÍA */}
 
-                    {/* DESCRIPCIÓN */}
+                      <td className="p-4">
 
-                    <td className="p-4 max-w-xs">
-
-                      {description ? (
-
-                        <div
-                          className="text-gray-300 text-sm line-clamp-3"
-                          title={description}
-                        >
-                          {description}
-                        </div>
-
-                      ) : (
-
-                        <span className="text-gray-500 text-sm">
-                          Sin descripción
+                        <span className="bg-gray-700 px-2 py-1 rounded text-xs">
+                          {prod
+                            .category
+                            ?.name ||
+                            "Sin categoría"}
                         </span>
 
-                      )}
+                      </td>
 
-                    </td>
+                      {/* PRECIO COMPRA */}
 
-                    {/* CATEGORÍA */}
+                      <td className="p-4 text-gray-300">
 
-                    <td className="p-4">
+                        $
+                        {Number(
+                          prod.costPrice ??
+                            prod.precio_costo ??
+                            0
+                        ).toFixed(
+                          2
+                        )}
 
-                      <span className="bg-gray-700 px-2 py-1 rounded text-xs">
+                      </td>
+
+                      {/* PRECIO VENTA / OFERTA */}
+
+                      <td className="p-4 font-semibold">
+                        {Boolean(
+                          prod.isOnSale ??
+                            prod.esta_en_oferta
+                        ) ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-gray-400 line-through text-sm">
+                              $
+                              {Number(
+                                prod.unitPrice ??
+                                  prod.precio_unitario ??
+                                  0
+                              ).toFixed(2)}
+                            </span>
+
+                            <span className="text-green-400 font-bold">
+                              $
+                              {Number(
+                                prod.salePrice ??
+                                  prod.precio_oferta ??
+                                  0
+                              ).toFixed(2)}
+                            </span>
+
+                            <span className="inline-flex w-fit px-2 py-0.5 rounded-full bg-red-600/20 text-red-400 text-xs font-bold">
+                              OFERTA
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-green-400">
+                            $
+                            {Number(
+                              prod.unitPrice ??
+                                prod.precio_unitario ??
+                                0
+                            ).toFixed(2)}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* STOCK */}
+
+                      <td className="p-4 font-bold text-indigo-400">
 
                         {
-                          prod.category?.name ||
-                          'Sin categoría'
-                        }
+                          totalAssigned
+                        }{" "}
+                        un.
 
-                      </span>
+                      </td>
 
-                    </td>
+                      {/* ACCIONES */}
 
-                    {/* PRECIO COMPRA */}
+                      <td className="p-4 text-right">
 
-                    <td className="p-4 text-gray-300">
+                        <div className="flex items-center justify-end gap-2">
 
-                      $
-                      {
-                        prod.costPrice ??
-                        prod.precio_costo ??
-                        0
-                      }
-
-                    </td>
-
-                    {/* PRECIO VENTA */}
-
-                    <td className="p-4 text-green-400 font-semibold">
-
-                      $
-                      {
-                        prod.unitPrice ??
-                        prod.precio_unitario ??
-                        0
-                      }
-
-                    </td>
-
-                    {/* TOTAL ASIGNADO */}
-
-                    <td className="p-4 font-bold text-indigo-400">
-
-                      {totalAssigned} un.
-
-                    </td>
-
-                    {/* ACCIONES */}
-
-                    <td className="p-4 text-right">
-
-                      <div className="flex items-center justify-end gap-2">
-
-                        {/* EDITAR */}
-
-                        <button
-                          onClick={() =>
-                            handleOpenEditModal(
-                              prod
-                            )
-                          }
-                          title="Editar Producto"
-                          className="p-2 bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white rounded-lg transition"
-                        >
-
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
+                          <button
+                            onClick={() =>
+                              handleOpenEditModal(
+                                prod
+                              )
+                            }
+                            title="Editar Producto"
+                            className="p-2 bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white rounded-lg transition"
                           >
 
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
 
-                          </svg>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
 
-                        </button>
+                            </svg>
 
-                        {/* ELIMINAR */}
+                          </button>
 
-                        <button
-                          onClick={() =>
-                            handleDeleteProduct(
-                              prod.id,
-                              prod.name
-                            )
-                          }
-                          title="Eliminar Producto"
-                          className="p-2 bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition"
-                        >
-
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
+                          <button
+                            onClick={() =>
+                              handleDeleteProduct(
+                                prod.id,
+                                prod.name ||
+                                  "este producto"
+                              )
+                            }
+                            title="Eliminar Producto"
+                            className="p-2 bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition"
                           >
 
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 01-1 1v3M4 7h16"
-                            />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
 
-                          </svg>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
 
-                        </button>
+                            </svg>
 
-                      </div>
+                          </button>
 
-                    </td>
+                        </div>
 
-                  </tr>
+                      </td>
 
-                );
+                    </tr>
+                  );
+                }
+              )
 
-              }
+            ) : (
+
+              <tr>
+
+                <td
+                  colSpan={8}
+                  className="p-8 text-center text-gray-400 italic"
+                >
+                  No se encontraron
+                  productos.
+                </td>
+
+              </tr>
+
             )}
 
           </tbody>
@@ -788,9 +1429,164 @@ export function ProductsPage() {
 
       </div>
 
-      {/* ======================================
-          MODAL CREAR / EDITAR
-      ======================================= */}
+      {/* PAGINACIÓN */}
+
+      {!loading &&
+        filteredProducts.length >
+          0 && (
+
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-5">
+
+            <div className="text-sm text-gray-400">
+
+              Mostrando{" "}
+
+              <span className="text-white font-medium">
+                {startIndex + 1}
+              </span>
+
+              {" - "}
+
+              <span className="text-white font-medium">
+                {Math.min(
+                  endIndex,
+                  filteredProducts.length
+                )}
+              </span>
+
+              {" de "}
+
+              <span className="text-white font-medium">
+                {
+                  filteredProducts.length
+                }
+              </span>
+
+              {" producto"}
+
+              {filteredProducts.length !==
+              1
+                ? "s"
+                : ""}
+
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+
+              <select
+                value={
+                  itemsPerPage
+                }
+                onChange={(e) =>
+                  setItemsPerPage(
+                    Number(
+                      e.target.value
+                    )
+                  )
+                }
+                className="bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              >
+
+                <option value={5}>
+                  5 por página
+                </option>
+
+                <option value={10}>
+                  10 por página
+                </option>
+
+                <option value={20}>
+                  20 por página
+                </option>
+
+                <option value={50}>
+                  50 por página
+                </option>
+
+              </select>
+
+              <button
+                onClick={() =>
+                  goToPage(
+                    currentPage - 1
+                  )
+                }
+                disabled={
+                  currentPage === 1
+                }
+                className="px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-sm hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                ←
+              </button>
+
+              <div className="flex items-center gap-1">
+
+                {getPageNumbers().map(
+                  (
+                    page,
+                    index
+                  ) => {
+
+                    if (
+                      page ===
+                      -1
+                    ) {
+                      return (
+                        <span
+                          key={`dots-${index}`}
+                          className="px-2 text-gray-500"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={page}
+                        onClick={() =>
+                          goToPage(
+                            page
+                          )
+                        }
+                        className={`min-w-[38px] px-3 py-2 rounded-lg text-sm transition ${
+                          currentPage ===
+                          page
+                            ? "bg-indigo-600 text-white"
+                            : "bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700"
+                        }`}
+                      >
+                        {
+                          page
+                        }
+                      </button>
+                    );
+                  }
+                )}
+
+              </div>
+
+              <button
+                onClick={() =>
+                  goToPage(
+                    currentPage + 1
+                  )
+                }
+                disabled={
+                  currentPage ===
+                  totalPages
+                }
+                className="px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-sm hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                →
+              </button>
+
+            </div>
+
+          </div>
+        )}
+
+      {/* MODAL */}
 
       {isCreateModalOpen && (
 
@@ -798,15 +1594,11 @@ export function ProductsPage() {
 
           <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full shadow-xl border border-gray-700 max-h-[90vh] overflow-y-auto">
 
-            {/* TITULO */}
-
             <h2 className="text-xl font-bold mb-4 text-indigo-400">
 
-              {
-                editingProductId
-                  ? 'Editar Producto'
-                  : 'Crear Nuevo Producto'
-              }
+              {editingProductId
+                ? "Editar Producto"
+                : "Crear Nuevo Producto"}
 
             </h2>
 
@@ -817,9 +1609,7 @@ export function ProductsPage() {
               className="space-y-4"
             >
 
-              {/* =================================
-                  SKU
-              ================================== */}
+              {/* SKU */}
 
               <div>
 
@@ -835,28 +1625,33 @@ export function ProductsPage() {
                   readOnly={
                     !editingProductId
                   }
+                  onChange={(e) =>
+                    setNewProduct({
+                      ...newProduct,
+                      sku:
+                        e.target
+                          .value,
+                    })
+                  }
                   className={`w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none ${
                     !editingProductId
-                      ? 'cursor-not-allowed opacity-80'
-                      : 'focus:border-indigo-500'
+                      ? "cursor-not-allowed opacity-80"
+                      : "focus:border-indigo-500"
                   }`}
                   required
                 />
 
                 {!editingProductId && (
-
                   <p className="text-xs text-gray-400 mt-1">
-                    El SKU se genera automáticamente
-                    y no se puede modificar.
+                    El SKU se genera
+                    automáticamente y no
+                    se puede modificar.
                   </p>
-
                 )}
 
               </div>
 
-              {/* =================================
-                  NOMBRE
-              ================================== */}
+              {/* NOMBRE */}
 
               <div>
 
@@ -872,7 +1667,9 @@ export function ProductsPage() {
                   onChange={(e) =>
                     setNewProduct({
                       ...newProduct,
-                      name: e.target.value
+                      name:
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
@@ -881,69 +1678,101 @@ export function ProductsPage() {
 
               </div>
 
-              {/* =================================
-                  DESCRIPCIÓN LARGA
-              ================================== */}
+              {/* IMÁGENES */}
 
               <div>
 
                 <label className="block text-sm text-gray-300 mb-1">
-                  Descripción del Producto
-                </label>
-
-                <textarea
-                  value={
-                    newProduct.description
-                  }
-                  onChange={(e) =>
-                    setNewProduct({
-                      ...newProduct,
-                      description:
-                        e.target.value
-                    })
-                  }
-                  placeholder="Escribe aquí una descripción detallada del producto..."
-                  rows={6}
-                  className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500 resize-y"
-                />
-
-                <p className="text-xs text-gray-400 mt-1">
-                  Puedes agregar características,
-                  especificaciones, materiales,
-                  detalles y otra información
-                  del producto.
-                </p>
-
-              </div>
-
-              {/* =================================
-                  IMAGEN
-              ================================== */}
-
-              <div>
-
-                <label className="block text-sm text-gray-300 mb-1">
-                  Imagen del Producto
+                  Imágenes del Producto
                 </label>
 
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/jpg"
+                  multiple
                   onChange={
                     handleImageChange
                   }
                   className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
                 />
 
-                {imagePreview && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Máximo 10 imágenes,
+                  JPG, JPEG, PNG o WEBP.
+                  Máximo 5 MB por imagen.
+                </p>
 
-                  <div className="mt-2">
+                {imagePreviews.length >
+                  0 && (
 
-                    <img
-                      src={imagePreview}
-                      alt="Vista previa"
-                      className="w-20 h-20 object-cover rounded border border-gray-600"
-                    />
+                  <div className="mt-4">
+
+                    <div className="text-xs text-gray-400 mb-2">
+                      {
+                        imagePreviews.length
+                      }{" "}
+                      imagen
+                      {imagePreviews.length !==
+                      1
+                        ? "es"
+                        : ""}{" "}
+                      seleccionada
+                      {imagePreviews.length !==
+                      1
+                        ? "s"
+                        : ""}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+
+                      {imagePreviews.map(
+                        (
+                          preview,
+                          index
+                        ) => (
+
+                          <div
+                            key={`${preview}-${index}`}
+                            className="relative group"
+                          >
+
+                            <img
+                              src={
+                                preview
+                              }
+                              alt={`Imagen ${
+                                index +
+                                1
+                              }`}
+                              className="w-full h-24 object-cover rounded-lg border border-gray-600"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRemoveImage(
+                                  index
+                                )
+                              }
+                              className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold opacity-90"
+                              title="Eliminar imagen"
+                            >
+                              ×
+                            </button>
+
+                            <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                              {
+                                index +
+                                1
+                              }
+                            </div>
+
+                          </div>
+
+                        )
+                      )}
+
+                    </div>
 
                   </div>
 
@@ -951,9 +1780,7 @@ export function ProductsPage() {
 
               </div>
 
-              {/* =================================
-                  CATEGORÍA
-              ================================== */}
+              {/* CATEGORÍA */}
 
               <div>
 
@@ -969,7 +1796,8 @@ export function ProductsPage() {
                     setNewProduct({
                       ...newProduct,
                       categoryId:
-                        e.target.value
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
@@ -981,15 +1809,19 @@ export function ProductsPage() {
                   </option>
 
                   {categories.map(
-                    (cat: any) => (
-
+                    (cat) => (
                       <option
-                        key={cat.id}
-                        value={cat.id}
+                        key={
+                          cat.id
+                        }
+                        value={
+                          cat.id
+                        }
                       >
-                        {cat.name}
+                        {
+                          cat.name
+                        }
                       </option>
-
                     )
                   )}
 
@@ -997,9 +1829,7 @@ export function ProductsPage() {
 
               </div>
 
-              {/* =================================
-                  PROVEEDOR
-              ================================== */}
+              {/* PROVEEDOR */}
 
               <div>
 
@@ -1015,7 +1845,8 @@ export function ProductsPage() {
                     setNewProduct({
                       ...newProduct,
                       supplierId:
-                        e.target.value
+                        e.target
+                          .value,
                     })
                   }
                   className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
@@ -1027,15 +1858,19 @@ export function ProductsPage() {
                   </option>
 
                   {suppliers.map(
-                    (sup: any) => (
-
+                    (sup) => (
                       <option
-                        key={sup.id}
-                        value={sup.id}
+                        key={
+                          sup.id
+                        }
+                        value={
+                          sup.id
+                        }
                       >
-                        {sup.name}
+                        {
+                          sup.name
+                        }
                       </option>
-
                     )
                   )}
 
@@ -1043,9 +1878,7 @@ export function ProductsPage() {
 
               </div>
 
-              {/* =================================
-                  STOCK MÍNIMO
-              ================================== */}
+              {/* STOCK MÍNIMO */}
 
               <div>
 
@@ -1064,8 +1897,9 @@ export function ProductsPage() {
                       ...newProduct,
                       minStock:
                         Number(
-                          e.target.value
-                        )
+                          e.target
+                            .value
+                        ),
                     })
                   }
                   className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
@@ -1074,9 +1908,7 @@ export function ProductsPage() {
 
               </div>
 
-              {/* =================================
-                  STOCK MÁXIMO
-              ================================== */}
+              {/* STOCK MÁXIMO */}
 
               <div>
 
@@ -1095,8 +1927,9 @@ export function ProductsPage() {
                       ...newProduct,
                       maxStock:
                         Number(
-                          e.target.value
-                        )
+                          e.target
+                            .value
+                        ),
                     })
                   }
                   className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
@@ -1105,9 +1938,7 @@ export function ProductsPage() {
 
               </div>
 
-              {/* =================================
-                  PRECIO COMPRA
-              ================================== */}
+              {/* PRECIO COMPRA */}
 
               <div>
 
@@ -1127,8 +1958,9 @@ export function ProductsPage() {
                       ...newProduct,
                       costPrice:
                         Number(
-                          e.target.value
-                        )
+                          e.target
+                            .value
+                        ),
                     })
                   }
                   className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
@@ -1137,9 +1969,7 @@ export function ProductsPage() {
 
               </div>
 
-              {/* =================================
-                  PRECIO VENTA
-              ================================== */}
+              {/* PRECIO VENTA */}
 
               <div>
 
@@ -1159,8 +1989,9 @@ export function ProductsPage() {
                       ...newProduct,
                       unitPrice:
                         Number(
-                          e.target.value
-                        )
+                          e.target
+                            .value
+                        ),
                     })
                   }
                   className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
@@ -1169,18 +2000,85 @@ export function ProductsPage() {
 
               </div>
 
-              {/* =================================
-                  BOTONES
-              ================================== */}
+              {/* OFERTA */}
+
+              <div className="border border-gray-700 rounded-lg p-4 bg-gray-900/40">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-200 font-semibold">
+                      Producto en oferta
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Activa esta opción para aplicar un precio especial.
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={newProduct.isOnSale}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          isOnSale:
+                            e.target.checked,
+                          salePrice:
+                            e.target.checked
+                              ? newProduct.salePrice
+                              : 0,
+                        })
+                      }
+                    />
+                    <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 peer-checked:bg-indigo-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                </div>
+
+                {newProduct.isOnSale && (
+                  <div className="mt-4">
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Precio de Oferta
+                    </label>
+
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={
+                        newProduct.salePrice ??
+                        ""
+                      }
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          salePrice:
+                            e.target.value ===
+                            ""
+                              ? 0
+                              : Number(
+                                  e.target.value
+                                ),
+                        })
+                      }
+                      placeholder="Ej. 80.00"
+                      className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500"
+                    />
+
+                    <p className="text-xs text-gray-500 mt-1">
+                      Debe ser menor que el precio de venta normal.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* BOTONES */}
 
               <div className="flex justify-end space-x-3 mt-6">
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setIsCreateModalOpen(
-                      false
-                    )
+                  onClick={
+                    handleCloseModal
                   }
                   className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm transition"
                 >
@@ -1191,11 +2089,9 @@ export function ProductsPage() {
                   type="submit"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-semibold transition"
                 >
-                  {
-                    editingProductId
-                      ? 'Actualizar Producto'
-                      : 'Guardar Producto'
-                  }
+                  {editingProductId
+                    ? "Actualizar Producto"
+                    : "Guardar Producto"}
                 </button>
 
               </div>
@@ -1211,3 +2107,5 @@ export function ProductsPage() {
     </div>
   );
 }
+
+export default ProductsPage;

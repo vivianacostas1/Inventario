@@ -325,7 +325,7 @@ export function SalesProfitView() {
       {/* --- MODAL DE GANANCIAS POR ACCIONISTA --- */}
       {isShareholderModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-gray-900 border border-gray-700 w-full max-w-6xl rounded-xl p-6 shadow-2xl text-white space-y-6">
+          <div className="bg-gray-900 border border-gray-700 w-full max-w-5xl rounded-xl p-6 shadow-2xl text-white space-y-6">
             <div className="flex justify-between items-center border-b border-gray-800 pb-3">
               <h3 className="text-xl font-bold flex items-center gap-2">👥 Resumen Financiero por Accionista</h3>
               <button 
@@ -337,7 +337,7 @@ export function SalesProfitView() {
             </div>
 
             {loadingFinancials ? (
-              <div className="py-12 text-center text-gray-400">Calculando capital y ganancias de accionistas...</div>
+              <div className="py-12 text-center text-gray-400">Calculando ganancias de accionistas...</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
@@ -345,34 +345,40 @@ export function SalesProfitView() {
                     <tr className="bg-gray-800 text-gray-400 border-b border-gray-700">
                       <th className="p-3">Accionista</th>
                       <th className="p-3 text-center">% Participación</th>
-                      <th className="p-3 text-right">Capital Invertido</th>
                       <th className="p-3 text-right">Ventas de sus Productos</th>
                       <th className="p-3 text-right">Ganancia Obtenida</th>
-                      <th className="p-3 text-right text-cyan-300">Ventas + Ganancia</th>
-                      <th className="p-3 text-right font-bold text-emerald-300">Total a Devolver</th>
                     </tr>
                   </thead>
                   <tbody>
                     {shareholderFinancials.length > 0 ? (
-                      shareholderFinancials.map((sh) => {
-                        const totalDevolucion = sh.investmentAmount + sh.netProfit;
-                        
-                        return (
-                          <tr key={sh.id} className="border-b border-gray-800 hover:bg-gray-850">
-                            <td className="p-3 font-medium text-white">{sh.name}</td>
-                            <td className="p-3 text-center text-indigo-300">{sh.sharePercentage}%</td>
-                            <td className="p-3 text-right text-amber-400">Bs {sh.investmentAmount.toFixed(2)}</td>
-                            <td className="p-3 text-right text-sky-400">Bs {(sh.productSalesTotal || 0).toFixed(2)}</td>
-                            <td className="p-3 text-right text-indigo-400">Bs {sh.netProfit.toFixed(2)}</td>
-                            
-                            <td className="p-3 text-right text-cyan-400 font-semibold">Bs {(((sh.productSalesTotal || 0) - (sh.netProfit || 0)) + (sh.netProfit || 0)).toFixed(2)}</td>
-                            <td className="p-3 text-right font-bold text-emerald-400">Bs {totalDevolucion.toFixed(2)}</td>
-                          </tr>
-                        );
-                      })
+                      <>
+                        {shareholderFinancials.map((sh) => {
+                          return (
+                            <tr key={sh.id} className="border-b border-gray-800 hover:bg-gray-850">
+                              <td className="p-3 font-medium text-white">{sh.name}</td>
+                              <td className="p-3 text-center text-indigo-300">{sh.sharePercentage}%</td>
+                              <td className="p-3 text-right text-sky-400">Bs {(sh.productSalesTotal || 0).toFixed(2)}</td>
+                              <td className="p-3 text-right font-bold text-indigo-400">Bs {sh.netProfit.toFixed(2)}</td>
+                            </tr>
+                          );
+                        })}
+                        {/* Fila de Totales */}
+                        <tr className="bg-gray-800/80 font-bold border-t border-gray-700">
+                          <td className="p-3 text-white">Totales</td>
+                          <td className="p-3 text-center text-indigo-300">
+                            {shareholderFinancials.reduce((acc, curr) => acc + Number(curr.sharePercentage || 0), 0)}%
+                          </td>
+                          <td className="p-3 text-right text-sky-400">
+                            Bs {shareholderFinancials.reduce((acc, curr) => acc + Number(curr.productSalesTotal || 0), 0).toFixed(2)}
+                          </td>
+                          <td className="p-3 text-right text-indigo-400">
+                            Bs {shareholderFinancials.reduce((acc, curr) => acc + Number(curr.netProfit || 0), 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      </>
                     ) : (
                       <tr>
-                        <td colSpan={7} className="p-6 text-center text-gray-400">No hay accionistas registrados o activos.</td>
+                        <td colSpan={4} className="p-6 text-center text-gray-400">No hay accionistas registrados o activos.</td>
                       </tr>
                     )}
                   </tbody>
