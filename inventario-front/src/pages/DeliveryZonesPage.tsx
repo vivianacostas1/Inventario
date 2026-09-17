@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   createDeliveryZone,
   deleteDeliveryZone,
@@ -6,7 +6,6 @@ import {
   updateDeliveryZone,
   type DeliveryZone,
 } from "../api/delivery-zone.service";
-import DeliveryZoneMap from "../components/DeliveryZoneMap";
 
 const emptyForm = {
   name: "",
@@ -26,12 +25,6 @@ export default function DeliveryZonesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [form, setForm] = useState(emptyForm);
-
-  // =====================================================
-  // COORDENADAS DE LA ZONA
-  // =====================================================
-
-  const [coordinates, setCoordinates] = useState<number[][]>([]);
 
   const loadZones = async () => {
     try {
@@ -58,7 +51,6 @@ export default function DeliveryZonesPage() {
 
   const resetForm = () => {
     setForm(emptyForm);
-    setCoordinates([]);
     setEditingId(null);
   };
 
@@ -78,24 +70,6 @@ export default function DeliveryZonesPage() {
       zoneType: zone.zoneType,
     });
 
-    // Cargar coordenadas existentes
-    if (
-      Array.isArray(zone.coordinates) &&
-      zone.coordinates.length > 0
-    ) {
-      const validCoordinates = zone.coordinates.filter(
-        (point): point is number[] =>
-          Array.isArray(point) &&
-          point.length >= 2 &&
-          typeof point[0] === "number" &&
-          typeof point[1] === "number"
-      );
-
-      setCoordinates(validCoordinates);
-    } else {
-      setCoordinates([]);
-    }
-
     setError("");
     setSuccess("");
 
@@ -104,17 +78,6 @@ export default function DeliveryZonesPage() {
       behavior: "smooth",
     });
   };
-
-  // =====================================================
-  // CAMBIO DE COORDENADAS
-  // =====================================================
-
-  const handleCoordinatesChange = useCallback(
-    (newCoordinates: number[][]) => {
-      setCoordinates(newCoordinates);
-    },
-    []
-  );
 
   // =====================================================
   // GUARDAR
@@ -159,20 +122,6 @@ export default function DeliveryZonesPage() {
       return;
     }
 
-    // ---------------------------------------------
-    // VALIDAR POLÍGONO
-    // ---------------------------------------------
-
-    if (
-      form.zoneType === "POLYGON" &&
-      coordinates.length < 3
-    ) {
-      setError(
-        "Debes dibujar la zona en el mapa antes de guardar."
-      );
-      return;
-    }
-
     try {
       setSaving(true);
 
@@ -183,13 +132,7 @@ export default function DeliveryZonesPage() {
         isActive: form.isActive,
         priority,
         zoneType: form.zoneType,
-
-        // Para POLYGON guardamos las coordenadas.
-        // Para PICKUP dejamos el campo vacío.
-        coordinates:
-          form.zoneType === "POLYGON"
-            ? coordinates
-            : null,
+        coordinates: null,
       };
 
       // ---------------------------------------------
@@ -199,9 +142,7 @@ export default function DeliveryZonesPage() {
       if (editingId) {
         await updateDeliveryZone(editingId, data);
 
-        setSuccess(
-          "Tarifa actualizada correctamente."
-        );
+        setSuccess("Tarifa actualizada correctamente.");
       }
 
       // ---------------------------------------------
@@ -211,9 +152,7 @@ export default function DeliveryZonesPage() {
       else {
         await createDeliveryZone(data);
 
-        setSuccess(
-          "Tarifa creada correctamente."
-        );
+        setSuccess("Tarifa creada correctamente.");
       }
 
       resetForm();
@@ -253,9 +192,7 @@ export default function DeliveryZonesPage() {
         resetForm();
       }
 
-      setSuccess(
-        "Zona eliminada correctamente."
-      );
+      setSuccess("Zona eliminada correctamente.");
 
       await loadZones();
     } catch (err: any) {
@@ -485,18 +422,12 @@ export default function DeliveryZonesPage() {
 
                 <select
                   value={form.zoneType}
-                  onChange={(e) => {
-                    const zoneType = e.target.value;
-
+                  onChange={(e) =>
                     setForm({
                       ...form,
-                      zoneType,
-                    });
-
-                    if (zoneType === "PICKUP") {
-                      setCoordinates([]);
-                    }
-                  }}
+                      zoneType: e.target.value,
+                    })
+                  }
                   className="w-full h-11 px-4 rounded-xl bg-gray-900 border border-gray-700 text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
                 >
 
@@ -570,86 +501,6 @@ export default function DeliveryZonesPage() {
               </div>
 
             </div>
-
-            {/* =====================================================
-                MAPA
-            ===================================================== */}
-
-            {form.zoneType === "POLYGON" && (
-              <div className="mt-7 pt-6 border-t border-gray-700">
-
-                <div className="mb-4">
-
-                  <h3 className="text-lg font-semibold text-white">
-                    📍 Zona geográfica
-                  </h3>
-
-                  <p className="text-sm text-gray-400 mt-1">
-                    Dibuja sobre el mapa el área donde aplica esta tarifa.
-                    Puedes editar o eliminar el polígono después.
-                  </p>
-
-                </div>
-
-                <DeliveryZoneMap
-                  coordinates={coordinates}
-                  onChange={handleCoordinatesChange}
-                />
-
-                <div className="mt-3 flex items-center justify-between">
-
-                  <p className="text-xs text-gray-500">
-                    {coordinates.length >= 3
-                      ? `Zona dibujada: ${coordinates.length} puntos`
-                      : "Aún no has dibujado una zona."}
-                  </p>
-
-                  {coordinates.length >= 3 && (
-                    <span className="text-xs text-emerald-400">
-                      ✓ Zona lista para guardar
-                    </span>
-                  )}
-
-                </div>
-
-              </div>
-            )}
-
-            {/* =====================================================
-                INFORMACIÓN PICKUP
-            ===================================================== */}
-
-            {form.zoneType === "PICKUP" && (
-              <div className="mt-7 pt-6 border-t border-gray-700">
-
-                <div className="p-4 rounded-xl bg-indigo-900/20 border border-indigo-500/20">
-
-                  <div className="flex items-start gap-3">
-
-                    <span className="text-xl">
-                      🏪
-                    </span>
-
-                    <div>
-
-                      <p className="text-sm font-semibold text-indigo-300">
-                        Punto de entrega
-                      </p>
-
-                      <p className="text-sm text-gray-400 mt-1">
-                        Esta opción no utiliza un polígono geográfico.
-                        Se utilizará como punto de retiro o entrega
-                        configurado por la tienda.
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-            )}
 
             {/* =====================================================
                 BOTONES
