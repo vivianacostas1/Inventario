@@ -5,29 +5,31 @@ import { isAdmin } from "../middlewares/role.middleware";
 
 const router = Router();
 
-// Todas las rutas requieren autenticación
-router.use(verifyToken);
-
-// Consulta de zonas
-router.get("/", DeliveryZoneController.getDeliveryZones);
+// Ruta pública: la usa la tienda (app Flutter) para calcular envíos, sin login
 router.get("/active", DeliveryZoneController.getActiveDeliveryZones);
-router.get("/:id", DeliveryZoneController.getDeliveryZoneById);
+
+// Consulta de zonas (requiere autenticación, ej. panel admin)
+router.get("/", verifyToken, DeliveryZoneController.getDeliveryZones);
+router.get("/:id", verifyToken, DeliveryZoneController.getDeliveryZoneById);
 
 // Administración de zonas
 router.post(
   "/",
+  verifyToken,
   isAdmin,
   DeliveryZoneController.createDeliveryZone
 );
 
 router.put(
   "/:id",
+  verifyToken,
   isAdmin,
   DeliveryZoneController.updateDeliveryZone
 );
 
 router.delete(
   "/:id",
+  verifyToken,
   isAdmin,
   DeliveryZoneController.deleteDeliveryZone
 );
