@@ -101,6 +101,7 @@ function ProductsPage() {
   const emptyProduct = {
     sku: "",
     name: "",
+    description: "",
     categoryId: "",
     supplierId: "",
     costPrice: 0,
@@ -272,6 +273,7 @@ function ProductsPage() {
     setNewProduct({
       sku: prod.sku || "",
       name: prod.name || "",
+      description: prod.description || "",
 
       categoryId:
         prod.categoryId || "",
@@ -610,6 +612,12 @@ function ProductsPage() {
       formData.append(
         "name",
         newProduct.name.trim()
+      );
+
+      // Descripción del producto
+      formData.append(
+        "description",
+        newProduct.description?.trim() || ""
       );
 
       formData.append(
@@ -1681,7 +1689,25 @@ function ProductsPage() {
               {/* IMÁGENES */}
 
               <div>
+                <label className="block text-sm text-gray-300 mb-1">
+                  Descripción
+                </label>
 
+                <textarea
+                  value={newProduct.description}
+                  onChange={(e) =>
+                    setNewProduct({
+                      ...newProduct,
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder="Describe el producto..."
+                  rows={4}
+                  className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm text-gray-300 mb-1">
                   Imágenes del Producto
                 </label>
