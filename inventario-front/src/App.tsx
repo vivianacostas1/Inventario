@@ -11,6 +11,10 @@ import {
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import ProductsPage from './pages/ProductsPage';
+import { Dashboard } from './pages/Dashboard';
+
+// 1. IMPORTAR EL NUEVO MÓDULO DE CONTROL DE STOCK
+import { StockControlPage } from './pages/StockControlPage';
 
 import { UsersPage } from './pages/UsersPage';
 import { CategoriesPage } from './pages/CategoriesPage';
@@ -79,20 +83,14 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex overflow-hidden">
-
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
-
+      {/* SIDEBAR */}
       <aside
         className={`bg-gray-900 border-r border-gray-800 flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out z-30 ${
           isSidebarExpanded ? 'w-64' : 'w-20'
         }`}
       >
         <div>
-
           {/* CABECERA */}
-
           <div className="p-4 border-b border-gray-800 flex items-center justify-between">
             {isSidebarExpanded && (
               <span className="font-bold text-xl text-indigo-400 truncate">
@@ -101,28 +99,17 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
             )}
 
             <button
-              onClick={() =>
-                setIsSidebarExpanded(!isSidebarExpanded)
-              }
+              onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
               className="p-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition mx-auto"
-              title={
-                isSidebarExpanded
-                  ? 'Ocultar menú'
-                  : 'Mostrar menú'
-              }
+              title={isSidebarExpanded ? 'Ocultar menú' : 'Mostrar menú'}
             >
               {isSidebarExpanded ? '◀' : '▶'}
             </button>
           </div>
 
-          {/* =================================================
-              NAVEGACIÓN
-          ================================================= */}
-
+          {/* NAVEGACIÓN */}
           <nav className="p-3 space-y-4 text-sm overflow-y-auto max-h-[calc(100vh-140px)]">
-
             {/* DASHBOARD */}
-
             <div>
               <Link
                 to="/"
@@ -134,345 +121,281 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
                 title="Dashboard"
               >
                 <span>📊</span>
-
-                {isSidebarExpanded && (
-                  <span>Dashboard</span>
-                )}
+                {isSidebarExpanded && <span>Dashboard</span>}
               </Link>
             </div>
 
-            {/* =================================================
-                INVENTARIO
-            ================================================= */}
-
+            {/* INVENTARIO */}
             <div>
               <button
-                onClick={() =>
-                  toggleSection('inventory')
-                }
+                onClick={() => toggleSection('inventory')}
                 className="w-full flex items-center justify-between px-2 py-2 text-gray-400 hover:text-white font-semibold uppercase text-xs tracking-wider"
               >
                 <span className="flex items-center gap-2">
                   <span>📦</span>
-
-                  {isSidebarExpanded && (
-                    <span>Inventario</span>
-                  )}
+                  {isSidebarExpanded && <span>Inventario</span>}
                 </span>
 
                 {isSidebarExpanded && (
-                  <span>
-                    {openSections.inventory
-                      ? '▼'
-                      : '▶'}
-                  </span>
+                  <span>{openSections.inventory ? '▼' : '▶'}</span>
                 )}
               </button>
 
-              {openSections.inventory &&
-                isSidebarExpanded && (
-                  <div className="ml-3 mt-1 space-y-1 border-l border-gray-800 pl-3">
+              {openSections.inventory && isSidebarExpanded && (
+                <div className="ml-3 mt-1 space-y-1 border-l border-gray-800 pl-3">
+                  <Link
+                    to="/stock-movements"
+                    className={`block px-3 py-1.5 rounded-md transition ${
+                      isActive('/stock-movements')
+                        ? 'bg-amber-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    Movimientos
+                  </Link>
 
-                    <Link
-                      to="/stock-movements"
-                      className={`block px-3 py-1.5 rounded-md transition ${
-                        isActive('/stock-movements')
-                          ? 'bg-amber-600 text-white font-medium'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                    >
-                      Movimientos
-                    </Link>
+                  <Link
+                    to="/stocks"
+                    className={`block px-3 py-1.5 rounded-md transition ${
+                      isActive('/stocks')
+                        ? 'bg-teal-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    Stock Actual
+                  </Link>
 
-                    <Link
-                      to="/stocks"
-                      className={`block px-3 py-1.5 rounded-md transition ${
-                        isActive('/stocks')
-                          ? 'bg-teal-600 text-white font-medium'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                    >
-                      Stock Actual
-                    </Link>
+                  {/* 2. ENLACE EN EL MENÚ A NIVEL DE INVENTARIO */}
+                  <Link
+                    to="/stock-control"
+                    className={`block px-3 py-1.5 rounded-md transition ${
+                      isActive('/stock-control')
+                        ? 'bg-indigo-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    📊 Control y Ventas Mes
+                  </Link>
 
-                    <Link
-                      to="/purchases"
-                      className={`block px-3 py-1.5 rounded-md transition ${
-                        isActive('/purchases')
-                          ? 'bg-emerald-600 text-white font-medium'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                    >
-                      Compras
-                    </Link>
-
-                  </div>
-                )}
+                  <Link
+                    to="/purchases"
+                    className={`block px-3 py-1.5 rounded-md transition ${
+                      isActive('/purchases')
+                        ? 'bg-emerald-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    Compras
+                  </Link>
+                </div>
+              )}
             </div>
 
-            {/* =================================================
-                OPERACIONES
-            ================================================= */}
-
+            {/* OPERACIONES */}
             <div>
               <button
-                onClick={() =>
-                  toggleSection('operations')
-                }
+                onClick={() => toggleSection('operations')}
                 className="w-full flex items-center justify-between px-2 py-2 text-gray-400 hover:text-white font-semibold uppercase text-xs tracking-wider"
               >
                 <span className="flex items-center gap-2">
                   <span>🛒</span>
-
-                  {isSidebarExpanded && (
-                    <span>Operaciones</span>
-                  )}
+                  {isSidebarExpanded && <span>Operaciones</span>}
                 </span>
 
                 {isSidebarExpanded && (
-                  <span>
-                    {openSections.operations
-                      ? '▼'
-                      : '▶'}
-                  </span>
+                  <span>{openSections.operations ? '▼' : '▶'}</span>
                 )}
               </button>
 
-              {openSections.operations &&
-                isSidebarExpanded && (
-                  <div className="ml-3 mt-1 space-y-1 border-l border-gray-800 pl-3">
+              {openSections.operations && isSidebarExpanded && (
+                <div className="ml-3 mt-1 space-y-1 border-l border-gray-800 pl-3">
+                  <Link
+                    to="/sales"
+                    className={`block px-3 py-1.5 rounded-md transition ${
+                      isActive('/sales')
+                        ? 'bg-emerald-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    Ventas
+                  </Link>
 
-                    <Link
-                      to="/sales"
-                      className={`block px-3 py-1.5 rounded-md transition ${
-                        isActive('/sales')
-                          ? 'bg-emerald-600 text-white font-medium'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                    >
-                      Ventas
-                    </Link>
+                  <Link
+                    to="/reports"
+                    className={`block px-3 py-1.5 rounded-md transition ${
+                      isActive('/reports')
+                        ? 'bg-emerald-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    📄 Proyección según Inventario Restante
+                  </Link>
 
-                    <Link
-                      to="/reports"
-                      className={`block px-3 py-1.5 rounded-md transition ${
-                        isActive('/reports')
-                          ? 'bg-emerald-600 text-white font-medium'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                    >
-                      📄 Proyección según Inventario Restante
-                    </Link>
+                  <Link
+                    to="/sales-profit"
+                    className={`block px-3 py-1.5 rounded-md transition ${
+                      isActive('/sales-profit')
+                        ? 'bg-indigo-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    📈 Ganancias Mensuales
+                  </Link>
 
-                    <Link
-                      to="/sales-profit"
-                      className={`block px-3 py-1.5 rounded-md transition ${
-                        isActive('/sales-profit')
-                          ? 'bg-indigo-600 text-white font-medium'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                    >
-                      📈 Ganancias Mensuales
-                    </Link>
-
-                    <Link
-                      to="/analytics"
-                      className={`block px-3 py-1.5 rounded-md transition ${
-                        isActive('/analytics')
-                          ? 'bg-purple-600 text-white font-medium'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                    >
-                      🧠 Análisis de Datos
-                    </Link>
-
-                  </div>
-                )}
+                  <Link
+                    to="/analytics"
+                    className={`block px-3 py-1.5 rounded-md transition ${
+                      isActive('/analytics')
+                        ? 'bg-purple-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    🧠 Análisis de Datos
+                  </Link>
+                </div>
+              )}
             </div>
 
-            {/* =================================================
-                ADMINISTRACIÓN
-            ================================================= */}
-
+            {/* ADMINISTRACIÓN */}
             {user?.role === 'ADMIN' && (
               <div>
-
                 <button
-                  onClick={() =>
-                    toggleSection('admin')
-                  }
+                  onClick={() => toggleSection('admin')}
                   className="w-full flex items-center justify-between px-2 py-2 text-gray-400 hover:text-white font-semibold uppercase text-xs tracking-wider"
                 >
                   <span className="flex items-center gap-2">
                     <span>⚙️</span>
-
-                    {isSidebarExpanded && (
-                      <span>Administración</span>
-                    )}
+                    {isSidebarExpanded && <span>Administración</span>}
                   </span>
 
                   {isSidebarExpanded && (
-                    <span>
-                      {openSections.admin
-                        ? '▼'
-                        : '▶'}
-                    </span>
+                    <span>{openSections.admin ? '▼' : '▶'}</span>
                   )}
                 </button>
 
-                {openSections.admin &&
-                  isSidebarExpanded && (
-                    <div className="ml-3 mt-1 space-y-2 border-l border-gray-800 pl-3">
+                {openSections.admin && isSidebarExpanded && (
+                  <div className="ml-3 mt-1 space-y-2 border-l border-gray-800 pl-3">
 
-                      {/* CATÁLOGOS */}
-
-                      <div>
-
-                        <button
-                          onClick={() =>
-                            toggleSection('catalogs')
-                          }
-                          className="w-full flex items-center justify-between px-3 py-1 text-gray-400 hover:text-white font-medium text-xs uppercase"
-                        >
-                          <span>📁 Catálogos</span>
-
-                          <span>
-                            {openSections.catalogs
-                              ? '▼'
-                              : '▶'}
-                          </span>
-                        </button>
-
-                        {openSections.catalogs && (
-                          <div className="ml-2 mt-1 space-y-1 border-l border-gray-700 pl-2">
-
-                            <Link
-                              to="/products"
-                              className={`block px-2.5 py-1 rounded-md transition ${
-                                isActive('/products')
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Productos
-                            </Link>
-
-                            <Link
-                              to="/categories"
-                              className={`block px-2.5 py-1 rounded-md transition ${
-                                isActive('/categories')
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Categorías
-                            </Link>
-
-                            <Link
-                              to="/warehouses"
-                              className={`block px-2.5 py-1 rounded-md transition ${
-                                isActive('/warehouses')
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Almacenes
-                            </Link>
-
-                            <Link
-                              to="/clients"
-                              className={`block px-2.5 py-1 rounded-md transition ${
-                                isActive('/clients')
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Clientes
-                            </Link>
-
-                            <Link
-                              to="/suppliers"
-                              className={`block px-2.5 py-1 rounded-md transition ${
-                                isActive('/suppliers')
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Proveedores
-                            </Link>
-
-                            <Link
-                              to="/shareholders"
-                              className={`block px-2.5 py-1 rounded-md transition ${
-                                isActive('/shareholders')
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Accionistas
-                            </Link>
-
-                          </div>
-                        )}
-
-                      </div>
-
-                      {/* TARIFAS DE ENTREGA */}
-
-                      <Link
-                        to="/delivery-zones"
-                        className={`block px-3 py-1.5 rounded-md transition ${
-                          isActive('/delivery-zones')
-                            ? 'bg-indigo-600 text-white'
-                            : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                        }`}
+                    {/* CATÁLOGOS */}
+                    <div>
+                      <button
+                        onClick={() => toggleSection('catalogs')}
+                        className="w-full flex items-center justify-between px-3 py-1 text-gray-400 hover:text-white font-medium text-xs uppercase"
                       >
-                        🚚 Tarifas de entrega
-                      </Link>
+                        <span>📁 Catálogos</span>
+                        <span>{openSections.catalogs ? '▼' : '▶'}</span>
+                      </button>
 
-                      {/* USUARIOS */}
+                      {openSections.catalogs && (
+                        <div className="ml-2 mt-1 space-y-1 border-l border-gray-700 pl-2">
+                          <Link
+                            to="/products"
+                            className={`block px-2.5 py-1 rounded-md transition ${
+                              isActive('/products')
+                                ? 'bg-indigo-600 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
+                          >
+                            Productos
+                          </Link>
 
-                      <Link
-                        to="/users"
-                        className={`block px-3 py-1.5 rounded-md transition ${
-                          isActive('/users')
-                            ? 'bg-indigo-600 text-white'
-                            : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                        }`}
-                      >
-                        Usuarios
-                      </Link>
+                          <Link
+                            to="/categories"
+                            className={`block px-2.5 py-1 rounded-md transition ${
+                              isActive('/categories')
+                                ? 'bg-indigo-600 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
+                          >
+                            Categorías
+                          </Link>
 
+                          <Link
+                            to="/warehouses"
+                            className={`block px-2.5 py-1 rounded-md transition ${
+                              isActive('/warehouses')
+                                ? 'bg-indigo-600 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
+                          >
+                            Almacenes
+                          </Link>
+
+                          <Link
+                            to="/clients"
+                            className={`block px-2.5 py-1 rounded-md transition ${
+                              isActive('/clients')
+                                ? 'bg-indigo-600 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
+                          >
+                            Clientes
+                          </Link>
+
+                          <Link
+                            to="/suppliers"
+                            className={`block px-2.5 py-1 rounded-md transition ${
+                              isActive('/suppliers')
+                                ? 'bg-indigo-600 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
+                          >
+                            Proveedores
+                          </Link>
+
+                          <Link
+                            to="/shareholders"
+                            className={`block px-2.5 py-1 rounded-md transition ${
+                              isActive('/shareholders')
+                                ? 'bg-indigo-600 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
+                          >
+                            Accionistas
+                          </Link>
+                        </div>
+                      )}
                     </div>
-                  )}
 
+                    <Link
+                      to="/delivery-zones"
+                      className={`block px-3 py-1.5 rounded-md transition ${
+                        isActive('/delivery-zones')
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                    >
+                      🚚 Tarifas de entrega
+                    </Link>
+
+                    <Link
+                      to="/users"
+                      className={`block px-3 py-1.5 rounded-md transition ${
+                        isActive('/users')
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                    >
+                      Usuarios
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
-
           </nav>
         </div>
 
-        {/* =====================================================
-            PERFIL Y CERRAR SESIÓN
-        ===================================================== */}
-
+        {/* PERFIL Y CERRAR SESIÓN */}
         <div className="p-3 border-t border-gray-800 bg-gray-900/50">
-
           {isSidebarExpanded && (
             <div className="mb-2">
-
-              <p className="text-xs text-gray-400 truncate">
-                Conectado como:
-              </p>
-
+              <p className="text-xs text-gray-400 truncate">Conectado como:</p>
               <p className="text-xs font-medium text-white truncate">
                 {user?.name || user?.email}
               </p>
-
               <span className="inline-block mt-0.5 px-2 py-0.5 text-[9px] font-bold bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30">
                 {user?.role}
               </span>
-
             </div>
           )}
 
@@ -482,86 +405,26 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
             title="Cerrar Sesión"
           >
             <span>🚪</span>
-
-            {isSidebarExpanded && (
-              <span>Cerrar Sesión</span>
-            )}
+            {isSidebarExpanded && <span>Cerrar Sesión</span>}
           </button>
-
         </div>
       </aside>
 
-      {/* =====================================================
-          CONTENIDO PRINCIPAL
-      ===================================================== */}
-
+      {/* CONTENIDO PRINCIPAL */}
       <main className="flex-1 overflow-y-auto bg-gray-900 flex flex-col">
-
         {!isSidebarExpanded && (
           <div className="bg-gray-900 border-b border-gray-800 p-3 flex items-center">
-
             <button
-              onClick={() =>
-                setIsSidebarExpanded(true)
-              }
+              onClick={() => setIsSidebarExpanded(true)}
               className="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:text-white text-xs font-medium flex items-center gap-2 transition"
             >
               <span>▶ Abrir Menú</span>
             </button>
-
           </div>
         )}
 
-        <div className="flex-1">
-          {children}
-        </div>
-
+        <div className="flex-1">{children}</div>
       </main>
-
-    </div>
-  );
-};
-
-// ============================================================
-// DASHBOARD
-// ============================================================
-
-const Dashboard = () => {
-  const { user } = useAuth();
-
-  return (
-    <div className="p-8 max-w-4xl mx-auto">
-
-      <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
-
-        <h1 className="text-3xl font-bold text-indigo-400 mb-2">
-          ¡Bienvenido de nuevo!
-        </h1>
-
-        <p className="text-gray-300">
-          Has iniciado sesión correctamente en el sistema de gestión de inventario.
-        </p>
-
-        <div className="mt-4 p-4 bg-gray-900/50 rounded border border-gray-700">
-
-          <p className="text-sm text-gray-400">
-            Correo:{' '}
-            <span className="text-white">
-              {user?.email}
-            </span>
-          </p>
-
-          <p className="text-sm text-gray-400">
-            Rol asignado:{' '}
-            <span className="text-indigo-300 font-semibold">
-              {user?.role}
-            </span>
-          </p>
-
-        </div>
-
-      </div>
-
     </div>
   );
 };
@@ -573,19 +436,9 @@ const Dashboard = () => {
 export function App() {
   return (
     <AuthProvider>
-
       <BrowserRouter>
-
         <Routes>
-
-          {/* LOGIN */}
-
-          <Route
-            path="/login"
-            element={<LoginPage />}
-          />
-
-          {/* DASHBOARD */}
+          <Route path="/login" element={<LoginPage />} />
 
           <Route
             path="/"
@@ -598,8 +451,6 @@ export function App() {
             }
           />
 
-          {/* PRODUCTOS */}
-
           <Route
             path="/products"
             element={
@@ -610,8 +461,6 @@ export function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* CATEGORÍAS */}
 
           <Route
             path="/categories"
@@ -624,8 +473,6 @@ export function App() {
             }
           />
 
-          {/* PROVEEDORES */}
-
           <Route
             path="/suppliers"
             element={
@@ -636,8 +483,6 @@ export function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* ACCIONISTAS */}
 
           <Route
             path="/shareholders"
@@ -650,8 +495,6 @@ export function App() {
             }
           />
 
-          {/* CLIENTES */}
-
           <Route
             path="/clients"
             element={
@@ -662,8 +505,6 @@ export function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* VENTAS */}
 
           <Route
             path="/sales"
@@ -676,8 +517,6 @@ export function App() {
             }
           />
 
-          {/* REPORTES */}
-
           <Route
             path="/reports"
             element={
@@ -688,8 +527,6 @@ export function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* GANANCIAS */}
 
           <Route
             path="/sales-profit"
@@ -702,8 +539,6 @@ export function App() {
             }
           />
 
-          {/* ANALYTICS */}
-
           <Route
             path="/analytics"
             element={
@@ -714,8 +549,6 @@ export function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* COMPRAS */}
 
           <Route
             path="/purchases"
@@ -728,8 +561,6 @@ export function App() {
             }
           />
 
-          {/* ALMACENES */}
-
           <Route
             path="/warehouses"
             element={
@@ -740,8 +571,6 @@ export function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* STOCK */}
 
           <Route
             path="/stocks"
@@ -754,7 +583,17 @@ export function App() {
             }
           />
 
-          {/* MOVIMIENTOS */}
+          {/* 3. DEFINICIÓN DE LA RUTA DEL NUEVO MÓDULO */}
+          <Route
+            path="/stock-control"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <StockControlPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/stock-movements"
@@ -767,8 +606,6 @@ export function App() {
             }
           />
 
-          {/* USUARIOS */}
-
           <Route
             path="/users"
             element={
@@ -779,10 +616,6 @@ export function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* =================================================
-              TARIFAS DE ENTREGA
-          ================================================= */}
 
           <Route
             path="/delivery-zones"
@@ -795,17 +628,9 @@ export function App() {
             }
           />
 
-          {/* RUTA NO ENCONTRADA */}
-
-          <Route
-            path="*"
-            element={<Navigate to="/" replace />}
-          />
-
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-
       </BrowserRouter>
-
     </AuthProvider>
   );
 }
