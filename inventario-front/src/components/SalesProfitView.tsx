@@ -12,8 +12,11 @@ export function SalesProfitView() {
 
   // Estados para el Modal de Accionistas
   const [isShareholderModalOpen, setIsShareholderModalOpen] = useState(false);
-  const [shareholderFinancials, setShareholderFinancials] = useState<any[]>([]);
+  const [shareholders, setShareholders] = useState<any[]>([]);
   const [loadingFinancials, setLoadingFinancials] = useState(false);
+  
+  // Estado para controlar qué filas de accionistas están desplegadas en el modal
+  const [expandedShareholders, setExpandedShareholders] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     api.get('/sales')
@@ -27,18 +30,22 @@ export function SalesProfitView() {
       });
   }, []);
 
-  // Función para abrir el modal de accionistas y cargar los datos del backend
+  // Cargar lista de accionistas
   const handleOpenShareholderModal = async () => {
     setIsShareholderModalOpen(true);
     setLoadingFinancials(true);
     try {
-      const res = await api.get('/shareholders/financials');
-      setShareholderFinancials(res.data);
+      const res = await api.get('/shareholders');
+      setShareholders(res.data);
     } catch (error) {
-      console.error("Error al obtener finanzas de accionistas", error);
+      console.error("Error al obtener la lista de accionistas", error);
     } finally {
       setLoadingFinancials(false);
     }
+  };
+
+  const toggleShareholderExpand = (id: string) => {
+    setExpandedShareholders(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const getUnitCost = (item: any) => {
@@ -134,6 +141,83 @@ export function SalesProfitView() {
     ? Object.entries(profitByMonth) 
     : Object.entries(profitByMonth).filter(([month]) => month === selectedMonth);
 
+  // --- CÁLCULO DINÁMICO DE ACCIONISTAS Y SUS PRECIOS VARIABLES DE VENTA ---
+  const calculateShareholderData = () => {
+    const map: Record<
+      string,
+      {
+        id: string;
+        name: string;
+        sharePercentage: number;
+        sales: number;
+        cost: number;
+        profit: number;
+        productsMap: Record<
+          string,
+          {
+            name: string;
+            quantity: number;
+            unitCost: number;
+            totalSales: number;
+            totalProfit: number;
+          }
+        >;
+      }
+    > = {};
+
+    shareholders.forEach((sh) => {
+      map[sh.id] = {
+        id: sh.id,
+        name: sh.name,
+        sharePercentage: Number(sh.sharePercentage || 0),
+        sales: 0,
+        cost: 0,
+        profit: 0,
+        productsMap: {},
+      };
+    });
+
+    filteredSales.forEach((sale) => {
+      sale.items?.forEach((item: any) => {
+        const shId = item.shareholderId || item.product?.shareholderProducts?.[0]?.shareholderId;
+        const qty = Number(item.quantity || 0);
+        const uPrice = Number(item.unitPrice || 0);
+        const uCost = getUnitCost(item);
+
+        // Suma exacta calculada por cada ítem (soporta variaciones de precio en distintas ventas)
+        const itemRevenue = uPrice * qty;
+        const itemCost = uCost * qty;
+        const itemProfit = itemRevenue - itemCost;
+
+        const pName = getProductName(item);
+
+        if (shId && map[shId]) {
+          map[shId].sales += itemRevenue;
+          map[shId].cost += itemCost;
+          map[shId].profit += itemProfit;
+
+          if (!map[shId].productsMap[pName]) {
+            map[shId].productsMap[pName] = {
+              name: pName,
+              quantity: 0,
+              unitCost: uCost,
+              totalSales: 0,
+              totalProfit: 0,
+            };
+          }
+
+          map[shId].productsMap[pName].quantity += qty;
+          map[shId].productsMap[pName].totalSales += itemRevenue;
+          map[shId].productsMap[pName].totalProfit += itemProfit;
+        }
+      });
+    });
+
+    return Object.values(map);
+  };
+
+  const calculatedShareholders = calculateShareholderData();
+
   if (loading) {
     return <div className="text-white p-6">Cargando reporte de ganancias...</div>;
   }
@@ -144,18 +228,16 @@ export function SalesProfitView() {
         <h2 className="text-2xl font-bold">📊 Reporte de Ventas y Ganancias</h2>
         
         <div className="flex items-center gap-3">
-          {/* Botón para ver Ganancias por Accionista */}
           <button 
             onClick={handleOpenShareholderModal}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium shadow transition flex items-center gap-2 text-sm"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium shadow transition flex items-center gap-2 text-sm cursor-pointer"
           >
             👥 Ganancias por Accionista
           </button>
 
-          {/* Botón para abrir el Modal de Selección de Mes */}
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium shadow transition flex items-center gap-2 text-sm"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium shadow transition flex items-center gap-2 text-sm cursor-pointer"
           >
             📅 Filtrar por Mes {selectedMonth !== 'todos' && `(${selectedMonth})`}
           </button>
@@ -174,7 +256,7 @@ export function SalesProfitView() {
         </div>
       </div>
 
-      {/* Resumen por Mes (Desplegable) */}
+      {/* Resumen por Mes */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden shadow-xl">
         <div 
           className="p-4 border-b border-gray-700 flex justify-between items-center font-semibold cursor-pointer hover:bg-gray-750 transition"
@@ -313,7 +395,7 @@ export function SalesProfitView() {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition"
+                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition cursor-pointer"
               >
                 Cerrar
               </button>
@@ -322,18 +404,37 @@ export function SalesProfitView() {
         </div>
       )}
 
-      {/* --- MODAL DE GANANCIAS POR ACCIONISTA --- */}
+      {/* --- MODAL DE GANANCIAS POR ACCIONISTA DINÁMICO CON DESPLEGABLE --- */}
       {isShareholderModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-gray-900 border border-gray-700 w-full max-w-5xl rounded-xl p-6 shadow-2xl text-white space-y-6">
-            <div className="flex justify-between items-center border-b border-gray-800 pb-3">
-              <h3 className="text-xl font-bold flex items-center gap-2">👥 Resumen Financiero por Accionista</h3>
-              <button 
-                onClick={() => setIsShareholderModalOpen(false)}
-                className="text-gray-400 hover:text-white font-bold text-lg"
-              >
-                ✕
-              </button>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-800 pb-3 gap-3">
+              <div>
+                <h3 className="text-xl font-bold flex items-center gap-2">👥 Resumen Financiero por Accionista</h3>
+                <p className="text-xs text-gray-400">
+                  Período actual: <span className="text-indigo-300 font-semibold">{selectedMonth === 'todos' ? 'Todos los meses' : selectedMonth}</span>
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="bg-gray-800 border border-gray-700 text-sm text-indigo-300 font-medium px-3 py-1.5 rounded-lg focus:outline-none cursor-pointer"
+                >
+                  <option value="todos">🌐 Todos los meses</option>
+                  {Object.keys(profitByMonth).map((m) => (
+                    <option key={m} value={m}>📅 {m}</option>
+                  ))}
+                </select>
+
+                <button 
+                  onClick={() => setIsShareholderModalOpen(false)}
+                  className="text-gray-400 hover:text-white font-bold text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {loadingFinancials ? (
@@ -343,42 +444,118 @@ export function SalesProfitView() {
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="bg-gray-800 text-gray-400 border-b border-gray-700">
+                      <th className="p-3 w-10"></th>
                       <th className="p-3">Accionista</th>
                       <th className="p-3 text-center">% Participación</th>
-                      <th className="p-3 text-right">Ventas de sus Productos</th>
-                      <th className="p-3 text-right">Ganancia Obtenida</th>
+                      <th className="p-3 text-right">Venta de productos</th>
+                      <th className="p-3 text-right">Capital</th>
+                      <th className="p-3 text-right">Ganancia</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {shareholderFinancials.length > 0 ? (
-                      <>
-                        {shareholderFinancials.map((sh) => {
-                          return (
-                            <tr key={sh.id} className="border-b border-gray-800 hover:bg-gray-850">
-                              <td className="p-3 font-medium text-white">{sh.name}</td>
-                              <td className="p-3 text-center text-indigo-300">{sh.sharePercentage}%</td>
-                              <td className="p-3 text-right text-sky-400">Bs {(sh.productSalesTotal || 0).toFixed(2)}</td>
-                              <td className="p-3 text-right font-bold text-indigo-400">Bs {sh.netProfit.toFixed(2)}</td>
+                    {calculatedShareholders.length > 0 ? (
+                      (() => {
+                        const totalSalesSum = calculatedShareholders.reduce((acc, curr) => acc + curr.sales, 0);
+                        const totalCapitalSum = calculatedShareholders.reduce((acc, curr) => acc + curr.cost, 0);
+                        const totalProfitSum = calculatedShareholders.reduce((acc, curr) => acc + curr.profit, 0);
+
+                        return (
+                          <>
+                            {calculatedShareholders.map((sh) => {
+                              const isExpanded = !!expandedShareholders[sh.id];
+                              const productsList = Object.values(sh.productsMap);
+
+                              return (
+                                <>
+                                  <tr key={sh.id} className="border-b border-gray-800 hover:bg-gray-850 transition">
+                                    <td className="p-3 text-center">
+                                      <button
+                                        onClick={() => toggleShareholderExpand(sh.id)}
+                                        className="p-1 rounded hover:bg-gray-700 text-indigo-400 font-bold text-xs flex items-center justify-center gap-1 cursor-pointer"
+                                        title={isExpanded ? 'Ocultar productos' : 'Ver productos vendidos'}
+                                      >
+                                        <span>👁️</span>
+                                        <span>{isExpanded ? '▲' : '▼'}</span>
+                                      </button>
+                                    </td>
+                                    <td className="p-3 font-medium text-white">{sh.name}</td>
+                                    <td className="p-3 text-center text-indigo-300">{sh.sharePercentage}%</td>
+                                    <td className="p-3 text-right text-sky-400 font-mono">Bs {sh.sales.toFixed(2)}</td>
+                                    <td className="p-3 text-right text-amber-400 font-mono">Bs {sh.cost.toFixed(2)}</td>
+                                    <td className="p-3 text-right font-bold text-emerald-400 font-mono">Bs {sh.profit.toFixed(2)}</td>
+                                  </tr>
+
+                                  {/* Sub-tabla desplegable con productos vendidos e importes ponderados */}
+                                  {isExpanded && (
+                                    <tr key={`expanded-${sh.id}`} className="bg-gray-950/80">
+                                      <td colSpan={6} className="p-4">
+                                        <div className="bg-gray-900 p-4 rounded-lg border border-gray-800 space-y-2">
+                                          <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">
+                                            📦 Productos vendidos de {sh.name} {selectedMonth !== 'todos' && `(${selectedMonth})`}:
+                                          </p>
+
+                                          {productsList.length > 0 ? (
+                                            <table className="w-full text-xs text-left border-collapse">
+                                              <thead>
+                                                <tr className="bg-gray-800 text-gray-400 border-b border-gray-700">
+                                                  <th className="p-2">Producto</th>
+                                                  <th className="p-2 text-center">Cantidad Vendida</th>
+                                                  <th className="p-2 text-right">Precio Costo (c/u)</th>
+                                                  <th className="p-2 text-right">Precio Venta (Promed.)</th>
+                                                  <th className="p-2 text-right">Total Ventas</th>
+                                                  <th className="p-2 text-right">Ganancia Neta</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody className="divide-y divide-gray-800">
+                                                {productsList.map((prod, pIdx) => {
+                                                  const averageUnitPrice = prod.quantity > 0 ? prod.totalSales / prod.quantity : 0;
+
+                                                  return (
+                                                    <tr key={pIdx} className="hover:bg-gray-850">
+                                                      <td className="p-2 text-gray-200 font-medium">{prod.name}</td>
+                                                      <td className="p-2 text-center text-gray-300 font-mono">{prod.quantity} un.</td>
+                                                      <td className="p-2 text-right text-amber-400 font-mono">Bs {prod.unitCost.toFixed(2)}</td>
+                                                      <td className="p-2 text-right text-sky-400 font-mono">Bs {averageUnitPrice.toFixed(2)}</td>
+                                                      <td className="p-2 text-right text-sky-300 font-mono font-semibold">Bs {prod.totalSales.toFixed(2)}</td>
+                                                      <td className="p-2 text-right text-emerald-400 font-mono font-bold">Bs {prod.totalProfit.toFixed(2)}</td>
+                                                    </tr>
+                                                  );
+                                                })}
+                                              </tbody>
+                                            </table>
+                                          ) : (
+                                            <p className="text-xs text-gray-400 italic">No se registraron ventas de productos para este accionista en el período seleccionado.</p>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </>
+                              );
+                            })}
+
+                            <tr className="bg-gray-800/80 font-bold border-t border-gray-700">
+                              <td></td>
+                              <td className="p-3 text-white">Totales</td>
+                              <td className="p-3 text-center text-indigo-300">
+                                {calculatedShareholders.reduce((acc, curr) => acc + curr.sharePercentage, 0)}%
+                              </td>
+                              <td className="p-3 text-right text-sky-400 font-mono">
+                                Bs {totalSalesSum.toFixed(2)}
+                              </td>
+                              <td className="p-3 text-right text-amber-400 font-mono">
+                                Bs {totalCapitalSum.toFixed(2)}
+                              </td>
+                              <td className="p-3 text-right text-emerald-400 font-mono">
+                                Bs {totalProfitSum.toFixed(2)}
+                              </td>
                             </tr>
-                          );
-                        })}
-                        {/* Fila de Totales */}
-                        <tr className="bg-gray-800/80 font-bold border-t border-gray-700">
-                          <td className="p-3 text-white">Totales</td>
-                          <td className="p-3 text-center text-indigo-300">
-                            {shareholderFinancials.reduce((acc, curr) => acc + Number(curr.sharePercentage || 0), 0)}%
-                          </td>
-                          <td className="p-3 text-right text-sky-400">
-                            Bs {shareholderFinancials.reduce((acc, curr) => acc + Number(curr.productSalesTotal || 0), 0).toFixed(2)}
-                          </td>
-                          <td className="p-3 text-right text-indigo-400">
-                            Bs {shareholderFinancials.reduce((acc, curr) => acc + Number(curr.netProfit || 0), 0).toFixed(2)}
-                          </td>
-                        </tr>
-                      </>
+                          </>
+                        );
+                      })()
                     ) : (
                       <tr>
-                        <td colSpan={4} className="p-6 text-center text-gray-400">No hay accionistas registrados o activos.</td>
+                        <td colSpan={6} className="p-6 text-center text-gray-400">No hay accionistas registrados o activos.</td>
                       </tr>
                     )}
                   </tbody>
@@ -389,7 +566,7 @@ export function SalesProfitView() {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setIsShareholderModalOpen(false)}
-                className="bg-gray-700 hover:bg-gray-600 text-white px-5 py-2 rounded-lg text-sm transition font-medium"
+                className="bg-gray-700 hover:bg-gray-600 text-white px-5 py-2 rounded-lg text-sm transition font-medium cursor-pointer"
               >
                 Cerrar
               </button>

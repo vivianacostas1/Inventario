@@ -8,6 +8,9 @@ export function SalesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Estado para el filtro por mes
+  const [selectedMonth, setSelectedMonth] = useState('todos');
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -28,8 +31,34 @@ export function SalesPage() {
     fetchSales();
   }, []);
 
-  // Filtrar ventas
+  // Extraer lista de meses disponibles de las ventas
+  const availableMonths = Array.from(
+    new Set(
+      sales.map((sale: any) => {
+        const dateObj = new Date(sale.createdAt || sale.date || Date.now());
+        const monthNames = [
+          "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+        return `${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+      })
+    )
+  );
+
+  // Filtrar ventas por mes y término de búsqueda
   const filteredSales = sales.filter((sale: any) => {
+    // 1. Filtrar por mes seleccionado
+    if (selectedMonth !== 'todos') {
+      const dateObj = new Date(sale.createdAt || sale.date || Date.now());
+      const monthNames = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
+      const monthKey = `${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+      if (monthKey !== selectedMonth) return false;
+    }
+
+    // 2. Filtrar por término de búsqueda
     const searchLower = searchTerm.toLowerCase();
 
     const matchesItem = sale.items?.some((item: any) => {
@@ -73,10 +102,10 @@ export function SalesPage() {
     setCurrentPage(page);
   };
 
-  // Cuando cambia el buscador, volver a la primera página
+  // Cuando cambia el buscador, el mes o los ítems por página, volver a la primera página
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+  }, [searchTerm, selectedMonth, itemsPerPage]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto text-white">
@@ -100,8 +129,8 @@ export function SalesPage() {
         </button>
       </div>
 
-      {/* Barra de Búsqueda */}
-      <div className="mb-6">
+      {/* Barra de Búsqueda y Filtro por Mes */}
+      <div className="mb-6 flex flex-col md:flex-row items-stretch md:items-center gap-4">
         <input
           type="text"
           placeholder="Buscar por accionista, producto o cantidad..."
@@ -109,6 +138,22 @@ export function SalesPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full md:w-96 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
         />
+
+        <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg">
+          <span className="text-xs text-slate-400 font-medium">📅 Mes:</span>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="bg-transparent text-sm text-indigo-300 font-medium focus:outline-none cursor-pointer"
+          >
+            <option value="todos" className="bg-slate-800 text-white">🌐 Todos los meses</option>
+            {availableMonths.map((m) => (
+              <option key={m} value={m} className="bg-slate-800 text-white">
+                📅 {m}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Tabla de Ventas */}
