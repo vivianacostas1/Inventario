@@ -36,6 +36,9 @@ interface CreateProductData {
   minStock?: number | string;
   maxStock?: number | string | null;
 
+  // TikTok URL
+  tiktokUrl?: string | null;
+
   // Imagen principal
   imageUrl?: string | null;
 
@@ -60,6 +63,9 @@ interface UpdateProductData {
 
   minStock?: number | string;
   maxStock?: number | string | null;
+
+  // TikTok URL
+  tiktokUrl?: string | null;
 
   // Imagen principal
   imageUrl?: string | null;
@@ -588,6 +594,11 @@ export class ProductService {
                 data.imageUrl ||
                 null,
 
+              // TikTok URL
+              tiktokUrl:
+                data.tiktokUrl?.trim() ||
+                null,
+
               // Oferta
               isOnSale,
 
@@ -868,38 +879,38 @@ export class ProductService {
         // ------------------------------------------------------
 
         if (newIsOnSale) {
-  if (newSalePrice == null) {
-    throw new Error(
-      "El precio de oferta es obligatorio cuando el producto está en oferta."
-    );
-  }
+          if (newSalePrice == null) {
+            throw new Error(
+              "El precio de oferta es obligatorio cuando el producto está en oferta."
+            );
+          }
 
-  const salePriceNumber = Number(newSalePrice);
+          const salePriceNumber = Number(newSalePrice);
 
-  if (
-    !Number.isFinite(salePriceNumber) ||
-    salePriceNumber <= 0
-  ) {
-    throw new Error(
-      "El precio de oferta debe ser mayor a 0."
-    );
-  }
+          if (
+            !Number.isFinite(salePriceNumber) ||
+            salePriceNumber <= 0
+          ) {
+            throw new Error(
+              "El precio de oferta debe ser mayor a 0."
+            );
+          }
 
-  const unitPriceNumber = Number(
-    data.unitPrice !== undefined
-      ? data.unitPrice
-      : existingProduct.unitPrice
-  );
+          const unitPriceNumber = Number(
+            data.unitPrice !== undefined
+              ? data.unitPrice
+              : existingProduct.unitPrice
+          );
 
-  if (
-    Number.isFinite(unitPriceNumber) &&
-    salePriceNumber >= unitPriceNumber
-  ) {
-    throw new Error(
-      "El precio de oferta debe ser menor que el precio normal."
-    );
-  }
-}
+          if (
+            Number.isFinite(unitPriceNumber) &&
+            salePriceNumber >= unitPriceNumber
+          ) {
+            throw new Error(
+              "El precio de oferta debe ser menor que el precio normal."
+            );
+          }
+        }
 
         // ------------------------------------------------------
         // PREPARAR DATOS
@@ -1009,6 +1020,16 @@ export class ProductService {
 
           updateData.imageUrl =
             data.imageUrl;
+        }
+
+        if (
+          data.tiktokUrl !==
+          undefined
+        ) {
+
+          updateData.tiktokUrl =
+            data.tiktokUrl?.trim() ||
+            null;
         }
 
         // ------------------------------------------------------

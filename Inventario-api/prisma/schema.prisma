@@ -145,7 +145,8 @@ model Product {
   createdAt DateTime @default(now()) @map("creado_en")
   updatedAt DateTime @updatedAt @map("actualizado_en")
 
-  imageUrl String? @map("imagen_url")
+  imageUrl  String? @map("imagen_url")
+  tiktokUrl String? @map("tiktok_url") // <-- Campo agregado para TikTok
 
   shareholderProducts ShareholderProduct[]
   analytics           ProductAnalytics?
@@ -330,9 +331,9 @@ model ProductAnalytics {
 }
 
 model DeliveryZone {
-  id          String  @id @default(uuid())
-  name        String  @map("nombre")
-  description String? @map("descripcion")
+  id          String   @id @default(uuid())
+  name        String   @map("nombre")
+  description String?  @map("descripcion")
 
   // Precio del delivery en bolivianos
   price Decimal @map("precio") @db.Decimal(10, 2)

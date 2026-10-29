@@ -225,6 +225,10 @@ export const ProductController = {
         maxStock:
           req.body.maxStock,
 
+        // TIKTOK
+        tiktokUrl:
+          req.body.tiktokUrl,
+
         // OFERTA
         isOnSale:
           req.body.isOnSale,
@@ -364,6 +368,10 @@ export const ProductController = {
 
         maxStock:
           req.body.maxStock,
+
+        // TIKTOK
+        tiktokUrl:
+          req.body.tiktokUrl,
 
         // OFERTA
         isOnSale:

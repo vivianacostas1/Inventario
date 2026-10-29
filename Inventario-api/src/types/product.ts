@@ -19,8 +19,9 @@ export interface CreateProductDTO {
   categoryId: string;
   supplierId: string;
 
-  // Imagen principal
+  // Enlaces y multimedia
   imageUrl?: string;
+  tiktokUrl?: string | null; // <-- CAMPO AGREGADO
 
   // Imágenes adicionales
   images?: ProductImageDTO[];
@@ -45,8 +46,9 @@ export interface UpdateProductDTO {
   categoryId?: string;
   supplierId?: string;
 
-  // Imagen principal
+  // Enlaces y multimedia
   imageUrl?: string;
+  tiktokUrl?: string | null; // <-- CAMPO AGREGADO
 
   // Imágenes adicionales
   images?: ProductImageDTO[];
